@@ -1025,7 +1025,7 @@ describe('countGuests', () => {
       { rsvp: 'yes', companionsEstimated: 1, companionsConfirmed: null },
       { rsvp: 'no', companionsEstimated: 3, companionsConfirmed: null },
     ])
-    expect(counts.estimated).toBe(6)
+    expect(counts.estimated).toBe(5)
   })
 
   it('ยืนยันแล้วนับเฉพาะ rsvp=yes และใช้ confirmed ถ้ามี', () => {
@@ -1034,7 +1034,7 @@ describe('countGuests', () => {
       { rsvp: 'yes', companionsEstimated: 1, companionsConfirmed: 3 },
       { rsvp: 'pending', companionsEstimated: 5, companionsConfirmed: null },
     ])
-    expect(counts.confirmed).toBe(6)
+    expect(counts.confirmed).toBe(5)
   })
 
   it('companionsConfirmed เป็น null (ยังไม่ได้ถาม) ตกกลับไปใช้ค่าที่คาดไว้', () => {
