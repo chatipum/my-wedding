@@ -3,8 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
-// biome-ignore lint/suspicious/noShadowRestrictedNames: Next.js requires this file's default export to be named Error
-export default function Error({
+export default function ErrorBoundary({
   error,
   reset,
 }: {
