@@ -1,5 +1,5 @@
 import * as v from 'valibot'
-import { idNumber, optionalCount, optionalText, requiredCount, requiredText } from './shared'
+import { countOrZero, idNumber, optionalInteger, optionalText, requiredText } from './shared'
 
 export const sideSchema = v.picklist(['groom', 'bride'], 'เลือกฝ่ายเจ้าบ่าวหรือเจ้าสาว')
 export const rsvpSchema = v.picklist(['pending', 'yes', 'no'], 'สถานะตอบรับไม่ถูกต้อง')
@@ -8,8 +8,8 @@ export const guestInputSchema = v.object({
   name: requiredText('ชื่อแขก'),
   side: sideSchema,
   group: optionalText,
-  companionsEstimated: requiredCount,
-  companionsConfirmed: optionalCount,
+  companionsEstimated: countOrZero,
+  companionsConfirmed: optionalInteger,
   rsvp: rsvpSchema,
   note: optionalText,
 })

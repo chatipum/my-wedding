@@ -1,9 +1,9 @@
 import * as v from 'valibot'
 import {
   idNumber,
-  optionalBaht,
   optionalDate,
   optionalId,
+  optionalInteger,
   optionalText,
   requiredText,
 } from './shared'
@@ -17,7 +17,7 @@ export const checklistInputSchema = v.object({
   name: requiredText('ชื่องาน'),
   category: optionalText,
   status: checklistStatusSchema,
-  budget: optionalBaht,
+  budget: optionalInteger,
   deadline: optionalDate,
   depositPaid: v.boolean(),
   vendorId: optionalId,

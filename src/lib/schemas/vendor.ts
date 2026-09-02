@@ -1,12 +1,12 @@
 import * as v from 'valibot'
-import { idNumber, optionalBaht, optionalText, requiredText } from './shared'
+import { idNumber, optionalInteger, optionalText, requiredText } from './shared'
 
 export const vendorInputSchema = v.object({
   name: requiredText('ชื่อผู้ให้บริการ'),
   role: optionalText,
   phone: optionalText,
   line: optionalText,
-  totalPrice: optionalBaht,
+  totalPrice: optionalInteger,
   note: optionalText,
 })
 

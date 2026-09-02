@@ -1,5 +1,4 @@
 import * as v from 'valibot'
-import { isBahtInput, parseBaht } from '@/lib/money'
 
 export const idSchema = v.object({
   id: v.pipe(v.number(), v.integer(), v.minValue(1)),
@@ -17,18 +16,38 @@ export const optionalText = v.pipe(
   v.transform((s): string | null => (s === '' ? null : s)),
 )
 
-/** string เข้า → number | null ออก · '' = ยังไม่ระบุยอด */
-export const optionalBaht = v.pipe(
+const MAX_INT = 2_147_483_647
+
+/** ช่องกรอกตัวเลข: ตัดจุลภาคกับช่องว่างทิ้งก่อน แล้วรับเฉพาะจำนวนเต็มไม่ติดลบ */
+const digits = (s: string) => s.replace(/[,\s]/g, '')
+
+const isValidDigits = (s: string) => digits(s) === '' || /^\d+$/.test(digits(s))
+const isWithinRange = (s: string) => digits(s) === '' || Number(digits(s)) <= MAX_INT
+
+/** string เข้า → number | null ออก · '' = ยังไม่ระบุ (เช่น ยอดค่าใช้จ่าย · งบ checklist · ราคาเหมา vendor) */
+export const optionalInteger = v.pipe(
   v.string(),
-  v.check(isBahtInput, 'ยอดเงินต้องเป็นจำนวนเต็มบาท เช่น 70,000'),
-  v.transform((s): number | null => parseBaht(s)),
+  v.check(isValidDigits, 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
+  v.check(isWithinRange, 'ตัวเลขใหญ่เกินไป'),
+  v.transform((s): number | null => (digits(s) === '' ? null : Number(digits(s)))),
 )
 
-export const requiredBaht = v.pipe(
+/** string เข้า → number ออกเสมอ · '' = error เพราะเป็นช่องบังคับ (เช่น ยอดซอง) */
+export const requiredInteger = (label: string) =>
+  v.pipe(
+    v.string(),
+    v.check((s) => digits(s) !== '', `ต้องใส่${label}`),
+    v.check(isValidDigits, 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
+    v.check(isWithinRange, 'ตัวเลขใหญ่เกินไป'),
+    v.transform((s): number => Number(digits(s))),
+  )
+
+/** จำนวนคน — ว่างเปล่าถือเป็น 0 (เช่น companionsEstimated) */
+export const countOrZero = v.pipe(
   v.string(),
-  v.check(isBahtInput, 'ยอดเงินต้องเป็นจำนวนเต็มบาท เช่น 1,000'),
-  v.check((s) => s.trim() !== '', 'ต้องใส่ยอดเงิน'),
-  v.transform((s): number => parseBaht(s) as number),
+  v.check(isValidDigits, 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
+  v.check(isWithinRange, 'ตัวเลขใหญ่เกินไป'),
+  v.transform((s): number => (digits(s) === '' ? 0 : Number(digits(s)))),
 )
 
 export const optionalId = v.pipe(
@@ -46,17 +65,3 @@ export const optionalDate = v.pipe(
 )
 
 export const requiredDate = v.pipe(v.string(), v.trim(), v.regex(ISO_DATE, 'ต้องใส่วันที่'))
-
-/** จำนวนคน — ว่างเปล่าถือเป็น 0 */
-export const requiredCount = v.pipe(
-  v.string(),
-  v.check((s) => s.trim() === '' || /^\d+$/.test(s.trim()), 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
-  v.transform((s): number => (s.trim() === '' ? 0 : Number(s))),
-)
-
-/** จำนวนคน — ว่างเปล่า = ยังไม่ได้ถาม (null) ต่างจาก 0 = ถามแล้วมาคนเดียว */
-export const optionalCount = v.pipe(
-  v.string(),
-  v.check((s) => s.trim() === '' || /^\d+$/.test(s.trim()), 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
-  v.transform((s): number | null => (s.trim() === '' ? null : Number(s))),
-)

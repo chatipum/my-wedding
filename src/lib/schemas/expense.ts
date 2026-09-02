@@ -1,9 +1,9 @@
 import * as v from 'valibot'
 import {
   idNumber,
-  optionalBaht,
   optionalDate,
   optionalId,
+  optionalInteger,
   optionalText,
   requiredText,
 } from './shared'
@@ -11,7 +11,7 @@ import {
 export const expenseInputSchema = v.object({
   name: requiredText('ชื่อรายการ'),
   category: optionalText,
-  amount: optionalBaht,
+  amount: optionalInteger,
   isPaid: v.boolean(),
   vendorId: optionalId,
   dueDate: optionalDate,

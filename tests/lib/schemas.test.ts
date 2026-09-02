@@ -44,6 +44,18 @@ describe('expenseInputSchema', () => {
     expect(() => v.parse(expenseInputSchema, { ...expenseForm, amount: 'ประมาณ 70000' })).toThrow()
   })
 
+  it('ปฏิเสธยอดเงินติดลบ', () => {
+    expect(() => v.parse(expenseInputSchema, { ...expenseForm, amount: '-500' })).toThrow()
+  })
+
+  it('ปฏิเสธยอดเงินทศนิยม', () => {
+    expect(() => v.parse(expenseInputSchema, { ...expenseForm, amount: '70.5' })).toThrow()
+  })
+
+  it('ปฏิเสธยอดเงินที่ใหญ่เกิน int ของ Postgres', () => {
+    expect(() => v.parse(expenseInputSchema, { ...expenseForm, amount: '9999999999' })).toThrow()
+  })
+
   it('ปฏิเสธวันที่รูปแบบผิด', () => {
     expect(() => v.parse(expenseInputSchema, { ...expenseForm, dueDate: '28/11/2569' })).toThrow()
   })

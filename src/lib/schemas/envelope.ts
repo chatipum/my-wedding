@@ -1,9 +1,9 @@
 import * as v from 'valibot'
-import { idNumber, optionalText, requiredBaht, requiredDate } from './shared'
+import { idNumber, optionalText, requiredDate, requiredInteger } from './shared'
 
 export const envelopeInputSchema = v.object({
   giverName: optionalText,
-  amount: requiredBaht,
+  amount: requiredInteger('ยอดเงิน'),
   receivedAt: requiredDate,
   note: optionalText,
 })
