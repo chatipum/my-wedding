@@ -65,7 +65,7 @@ src/components/ui/money.test.tsx / badge.test.tsx   เทสของ Money / B
 
 data/notion-export.json           ข้อมูล seed (commit ลง repo)
 scripts/seed.ts                   bun run db:seed [--dry-run] [--force]
-                                  เทสอยู่ข้างไฟล์เสมอ (`*.test.ts` / `*.test.tsx` ในโฟลเดอร์เดียวกับ source) — ไม่มี `tests/` แยก
+src/**/*.test.ts                  เทสอยู่ข้างไฟล์เสมอ (`*.test.ts` / `*.test.tsx` ในโฟลเดอร์เดียวกับ source) — ไม่มี `tests/` แยก
 drizzle/                          migration ที่ drizzle-kit generate ให้
 ```
 
@@ -1371,7 +1371,7 @@ export function toActionResult(error: unknown): ActionResult {
 - [ ] **Step 6: รันเทสให้ผ่าน**
 
 Run: `bun test`
-Expected: PASS ทั้งหมด (money · env · seed-data · totals · action-result)
+Expected: PASS ทั้งหมด (money · totals · action-result)
 
 - [ ] **Step 7: Commit**
 
