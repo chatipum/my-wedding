@@ -5178,6 +5178,15 @@ bun run lint
 Expected: รอบแรก Biome รายงาน `noRestrictedImports` **ครบทั้ง 6 ไฟล์** · รอบสองเขียว
 ถ้าไฟล์ไหนไม่โดนรายงาน แปลว่า glob ใน `biome.json` ครอบไม่ถึง ต้องแก้ก่อนปิดงาน
 
+ต่อด้วยการตรวจอีกครึ่งของกฎ — `'use client'` ในหน้า/layout ซึ่ง `noRestrictedImports` จับไม่ได้
+(มันดูได้แค่ import specifier):
+
+```bash
+grep -rn "'use client'" app/**/page.tsx app/**/layout.tsx app/page.tsx app/layout.tsx
+```
+Expected: ไม่เจอสักบรรทัด (`grep` คืน exit 1) — ถ้าเจอ แปลว่ามีหน้าที่กลายเป็น client component
+ต้องย้ายส่วนที่โต้ตอบออกไปเป็น leaf component ก่อนปิดงาน
+
 - [ ] **Step 4: ไล่เช็ค semantic HTML ตามสเปคข้อ 11**
 
 เปิดแต่ละหน้าแล้วดู DOM (devtools) — ต้องเป็นจริงทุกข้อ:
