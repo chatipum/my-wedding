@@ -18,3 +18,6 @@ dist/
 
 # logs
 *.log
+
+# subagent-driven-development scratch
+.superpowers/
