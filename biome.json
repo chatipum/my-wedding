@@ -14,7 +14,7 @@
   },
   "overrides": [
     {
-      "includes": ["app/**/page.tsx", "app/**/layout.tsx"],
+      "includes": ["src/app/**/page.tsx", "src/app/**/layout.tsx"],
       "linter": {
         "rules": {
           "style": {
