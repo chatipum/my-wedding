@@ -14,8 +14,10 @@
 
 - **เงินเป็น `integer` บาทเต็ม** ทุกที่ ไม่มี `numeric` / `float` / สตริงเงินในชั้น logic ตัวแปรเงินใน query / action / totals เป็น `number` เสมอ
 - **`expenses.amount` เป็น `null` ได้** และห้ามแปลง `null` เป็น `0` ทุกที่ที่แสดงยอดรวมต้องมีตัวนับ "ยังไม่ระบุยอด N รายการ" กำกับ
-- **format เงินตอนแสดงผลเท่านั้น** ผ่าน `<Money>` เท่านั้น — `formatBaht` ถูกเรียกได้จาก component เท่านั้น, `parseBaht` ถูกเรียกได้จาก valibot schema เท่านั้น
+- **เงิน format ตอนแสดงผลเท่านั้น** ผ่าน `<Money>` → `formatBaht(n)` คืน `'70,000 บาท'` · ไม่มีชั้นแปลงสตริงเงินอีกแล้ว ช่องกรอกตัวเลขทุกช่องใช้ helper กลาง (`optionalInteger` / `requiredInteger` / `countOrZero`) ซึ่งไม่รู้เรื่องสกุลเงิน
 - **ตัวเลขบนจอต้องเป็นเลขอาราบิกเสมอ** (`numberingSystem: 'latn'`)
+- **ห้ามใช้ `for` / `for...of` / `while`** — ใช้เมธอดของ array (`map` `filter` `reduce` `flatMap` `forEach` `some` `every` `Object.entries` / `Object.fromEntries`) อ่านง่ายมาก่อนสั้น
+- **โค้ดแอปทั้งหมดอยู่ใต้ `src/`** รวมทั้ง `src/app/` ตามที่เอกสาร Next.js กำหนดเรื่อง src folder · `tests/` `scripts/` `data/` `drizzle/` อยู่ที่ราก
 - **`page.tsx` / `layout.tsx` ห้าม import `@/db/mutations`** และห้ามมี `'use client'` — บังคับด้วย Biome `noRestrictedImports`
 - **ทุก write อยู่ใน `actions.ts` ที่ขึ้นต้นด้วย `'use server'`** เท่านั้น ไม่มีข้อยกเว้น
 - **Server action ไม่ throw** คืน `{ ok: true } | { ok: false, message, detail?, fieldErrors? }` เสมอ
@@ -31,14 +33,14 @@
 ## File Structure
 
 ```
-app/layout.tsx                    nav + metadata + next/font  (server)
-app/globals.css                   @theme token + @layer components ทั้งหมด
-app/page.tsx                      dashboard
-app/error.tsx / loading.tsx / not-found.tsx
-app/<module>/page.tsx             server component: query → render
-app/<module>/actions.ts           'use server': create / update / toggle / delete
-app/<module>/<module>-form.tsx    'use client': react-hook-form
-app/<module>/*-toggle.tsx         'use client': useOptimistic
+src/app/layout.tsx                    nav + metadata + next/font  (server)
+src/app/globals.css                   @theme token + @layer components ทั้งหมด
+src/app/page.tsx                      dashboard
+src/app/error.tsx / loading.tsx / not-found.tsx
+src/app/<module>/page.tsx             server component: query → render
+src/app/<module>/actions.ts           'use server': create / update / toggle / delete
+src/app/<module>/<module>-form.tsx    'use client': react-hook-form
+src/app/<module>/*-toggle.tsx         'use client': useOptimistic
 
 src/db/schema.ts                  5 ตาราง
 src/db/env.ts                     requireDatabaseUrl (pure, มีเทส)
@@ -47,7 +49,7 @@ src/db/queries.ts                 อ่านอย่างเดียว + a
 src/db/mutations.ts               เขียนอย่างเดียว
 src/db/seed-data.ts               parse/validate notion-export.json (pure, มีเทส)
 
-src/lib/money.ts                  parseBaht / isBahtInput / formatBaht
+src/lib/money.ts                  formatBaht
 src/lib/totals.ts                 ยอดรวมทั้งหมด (pure)
 src/lib/action-result.ts          ActionResult + toActionResult
 src/lib/cn.ts                     clsx wrapper
@@ -68,7 +70,7 @@ drizzle/                          migration ที่ drizzle-kit generate ใ�
 ### Task 1: Scaffold — Bun + Next.js + Biome + Tailwind v4
 
 **Files:**
-- Create: `package.json`, `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`, `biome.json`, `app/layout.tsx`, `app/page.tsx`, `app/globals.css`, `src/lib/cn.ts`
+- Create: `package.json`, `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`, `biome.json`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `src/lib/cn.ts`
 - Modify: `README.md`
 
 **Interfaces:**
@@ -148,12 +150,12 @@ export default {
 }
 ```
 
-`app/globals.css` (token ตัวจริงมาใน Task 7):
+`src/app/globals.css` (token ตัวจริงมาใน Task 7):
 ```css
 @import "tailwindcss";
 ```
 
-`app/layout.tsx`:
+`src/app/layout.tsx`:
 ```tsx
 import './globals.css'
 
@@ -166,7 +168,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-`app/page.tsx`:
+`src/app/page.tsx`:
 ```tsx
 export default function Page() {
   return <main>wedding dashboard</main>
@@ -199,7 +201,7 @@ export function cn(...inputs: ClassValue[]): string {
   },
   "overrides": [
     {
-      "includes": ["app/**/page.tsx", "app/**/layout.tsx"],
+      "includes": ["src/app/**/page.tsx", "src/app/**/layout.tsx"],
       "linter": {
         "rules": {
           "style": {
@@ -224,8 +226,8 @@ export function cn(...inputs: ClassValue[]): string {
 - [ ] **Step 5: พิสูจน์ว่ากฎ noRestrictedImports ทำงานจริง (นี่คือเทสของ task นี้)**
 
 ```bash
-mkdir -p app/_probe
-cat > app/_probe/page.tsx <<'TSX'
+mkdir -p src/app/_probe
+cat > src/app/_probe/page.tsx <<'TSX'
 import { createExpense } from '@/db/mutations'
 
 export default function Page() {
@@ -234,12 +236,12 @@ export default function Page() {
 TSX
 bun run lint
 ```
-Expected: FAIL — Biome รายงาน `noRestrictedImports` ที่ `app/_probe/page.tsx`
+Expected: FAIL — Biome รายงาน `noRestrictedImports` ที่ `src/app/_probe/page.tsx`
 
 - [ ] **Step 6: ลบ probe แล้วยืนยันว่า lint กับ build เขียว**
 
 ```bash
-rm -rf app/_probe
+rm -rf src/app/_probe
 bun run lint
 bun run build
 ```
@@ -277,7 +279,9 @@ git commit -m "chore: scaffold next.js + bun + biome + tailwind v4"
 
 ---
 
-### Task 2: `src/lib/money.ts` — parseBaht / formatBaht
+### Task 2: `src/lib/money.ts` — formatBaht
+
+> **แก้ตามคำสั่งเจ้าของงาน 2026-09-02:** ไม่ต้องมี function แปลงสตริงเงินเลยทั้งนั้น เพราะทั้ง app คนใช้รู้อยู่แล้วว่าเป็นบาท เหลือแค่ function ธรรมดาที่เปลี่ยนตัวเลขเป็น display currency (`70000 => '70,000 บาท'`) ช่องกรอกตัวเลขทุกช่องใช้ helper กลางที่ไม่รู้เรื่องสกุลเงินแทน (ดู Task 6)
 
 **Files:**
 - Create: `src/lib/money.ts`, `tests/lib/money.test.ts`
@@ -285,86 +289,27 @@ git commit -m "chore: scaffold next.js + bun + biome + tailwind v4"
 **Interfaces:**
 - Consumes: ไม่มี
 - Produces:
-  - `parseBaht(input: string): number | null` — สตริงว่าง → `null` · อินพุตไม่ถูกต้อง → `throw InvalidBahtError`
-  - `isBahtInput(input: string): boolean` — ใช้ใน `v.check` ของ schema
-  - `formatBaht(n: number): string`
-  - `class InvalidBahtError extends Error`
+  - `formatBaht(n: number): string` — คืน `'70,000 บาท'`
 
 - [ ] **Step 1: เขียนเทสให้ fail ก่อน**
 
 `tests/lib/money.test.ts`:
 ```ts
 import { describe, expect, it } from 'bun:test'
-import { formatBaht, isBahtInput, parseBaht } from '@/lib/money'
-
-describe('parseBaht', () => {
-  it('รับตัวเลขล้วน', () => {
-    expect(parseBaht('70000')).toBe(70000)
-  })
-
-  it('ตัด comma ออก', () => {
-    expect(parseBaht('70,000')).toBe(70000)
-  })
-
-  it('ตัดสัญลักษณ์บาทและคำว่าบาท', () => {
-    expect(parseBaht('70000฿')).toBe(70000)
-    expect(parseBaht('70,000 บาท')).toBe(70000)
-  })
-
-  it('ตัดช่องว่างรวมถึง non-breaking space', () => {
-    expect(parseBaht('70 000')).toBe(70000)
-    expect(parseBaht('70 000')).toBe(70000)
-  })
-
-  it('แปลงเลขไทยเป็นอาราบิก', () => {
-    expect(parseBaht('๗๐๐๐๐')).toBe(70000)
-  })
-
-  it('สตริงว่างคือยังไม่ระบุยอด ไม่ใช่ศูนย์', () => {
-    expect(parseBaht('')).toBeNull()
-    expect(parseBaht('   ')).toBeNull()
-  })
-
-  it('ศูนย์คือศูนย์จริง ไม่ใช่ null', () => {
-    expect(parseBaht('0')).toBe(0)
-  })
-
-  it('ปฏิเสธข้อความที่ไม่ใช่ตัวเลข ห้ามเดาเป็น 70', () => {
-    expect(() => parseBaht('abc')).toThrow()
-    expect(() => parseBaht('70k')).toThrow()
-    expect(() => parseBaht('ประมาณ 70000')).toThrow()
-  })
-
-  it('ปฏิเสธค่าติดลบและทศนิยม', () => {
-    expect(() => parseBaht('-500')).toThrow()
-    expect(() => parseBaht('70.5')).toThrow()
-  })
-
-  it('ปฏิเสธตัวเลขที่ใหญ่เกินช่วงจำนวนเต็มที่ปลอดภัย', () => {
-    expect(() => parseBaht('9'.repeat(20))).toThrow()
-  })
-})
-
-describe('isBahtInput', () => {
-  it('ตรงกับสิ่งที่ parseBaht ยอมรับ', () => {
-    expect(isBahtInput('70,000')).toBe(true)
-    expect(isBahtInput('')).toBe(true)
-    expect(isBahtInput('abc')).toBe(false)
-  })
-})
+import { formatBaht } from '@/lib/money'
 
 describe('formatBaht', () => {
-  it('ใส่ comma คั่นหลัก', () => {
-    expect(formatBaht(70000)).toBe('70,000')
-    expect(formatBaht(0)).toBe('0')
+  it('ใส่จุลภาคและต่อท้ายด้วยหน่วย', () => {
+    expect(formatBaht(70000)).toBe('70,000 บาท')
+    expect(formatBaht(1234567)).toBe('1,234,567 บาท')
+  })
+
+  it('ศูนย์ก็ยังแสดงเป็นศูนย์ ไม่ใช่ค่าว่าง', () => {
+    expect(formatBaht(0)).toBe('0 บาท')
   })
 
   it('ไม่มีเลขไทยหลุดออกมา', () => {
     expect(formatBaht(70000)).not.toMatch(/[๐-๙]/)
-  })
-
-  it('ไม่มีทศนิยม', () => {
-    expect(formatBaht(1234567)).toBe('1,234,567')
   })
 })
 ```
@@ -378,45 +323,6 @@ Expected: FAIL — `Cannot find module '@/lib/money'`
 
 `src/lib/money.ts`:
 ```ts
-const THAI_DIGITS = '๐๑๒๓๔๕๖๗๘๙'
-
-export class InvalidBahtError extends Error {
-  constructor(input: string) {
-    super(`ยอดเงินไม่ถูกต้อง: ${JSON.stringify(input)}`)
-    this.name = 'InvalidBahtError'
-  }
-}
-
-function normalize(input: string): string {
-  return input
-    .replace(/[๐-๙]/g, (d) => String(THAI_DIGITS.indexOf(d)))
-    .replace(/฿/g, '')
-    .replace(/บาท/g, '')
-    .replace(/[,\s ]/g, '')
-}
-
-/** เรียกได้จาก valibot schema เท่านั้น — สตริงว่าง = ยังไม่ระบุยอด (null) */
-export function parseBaht(input: string): number | null {
-  // เช็คว่าง "จากอินพุตดิบ" ไม่ใช่หลัง normalize — ไม่งั้น '฿' หรือ ',' เดี่ยวๆ จะกลายเป็น null
-  // ทั้งที่มันคืออินพุตผิดรูป ต้อง throw
-  const trimmed = input.trim()
-  if (trimmed === '') return null
-  const s = normalize(input)
-  if (!/^\d+$/.test(s)) throw new InvalidBahtError(input)
-  const n = Number(s)
-  if (!Number.isSafeInteger(n)) throw new InvalidBahtError(input)
-  return n
-}
-
-export function isBahtInput(input: string): boolean {
-  try {
-    parseBaht(input)
-    return true
-  } catch {
-    return false
-  }
-}
-
 const BAHT_FORMAT = new Intl.NumberFormat('th-TH', {
   numberingSystem: 'latn',
   maximumFractionDigits: 0,
@@ -424,7 +330,7 @@ const BAHT_FORMAT = new Intl.NumberFormat('th-TH', {
 
 /** เรียกได้จาก component เท่านั้น — ปกติผ่าน <Money> */
 export function formatBaht(n: number): string {
-  return BAHT_FORMAT.format(n)
+  return `${BAHT_FORMAT.format(n)} บาท`
 }
 ```
 
@@ -437,7 +343,7 @@ Expected: PASS ทุกเคส
 
 ```bash
 git add src/lib/money.ts tests/lib/money.test.ts
-git commit -m "feat: add parseBaht/formatBaht with tests"
+git commit -m "feat: add formatBaht with tests"
 ```
 
 ---
@@ -766,16 +672,19 @@ export type SeedFile = v.InferOutput<typeof seedFileSchema>
 export function parseSeedFile(raw: unknown): SeedFile {
   const file = v.parse(seedFileSchema, raw)
 
-  const ids = new Set<number>()
-  for (const vendor of file.vendors) {
-    if (ids.has(vendor.id)) throw new Error(`vendor id ซ้ำ: ${vendor.id}`)
-    ids.add(vendor.id)
-  }
+  const ids = file.vendors.reduce((seen, vendor) => {
+    if (seen.has(vendor.id)) throw new Error(`vendor id ซ้ำ: ${vendor.id}`)
+    return seen.add(vendor.id)
+  }, new Set<number>())
 
-  for (const expense of file.expenses) {
-    if (expense.vendorId !== null && !ids.has(expense.vendorId)) {
-      throw new Error(`vendorId ${expense.vendorId} ของรายการ "${expense.name}" ไม่มีอยู่ในรายชื่อ vendor`)
-    }
+  const unknownVendorExpenses = file.expenses.filter(
+    (expense) => expense.vendorId !== null && !ids.has(expense.vendorId),
+  )
+  const firstUnknown = unknownVendorExpenses[0]
+  if (firstUnknown) {
+    throw new Error(
+      `vendorId ${firstUnknown.vendorId} ของรายการ "${firstUnknown.name}" ไม่มีอยู่ในรายชื่อ vendor`,
+    )
   }
 
   return file
@@ -827,8 +736,8 @@ Expected: PASS
 ```ts
 import { sql } from 'drizzle-orm'
 import { db } from '@/db'
-import { parseSeedFile, seedStats } from '@/db/seed-data'
 import { expenses, vendors } from '@/db/schema'
+import { parseSeedFile, seedStats } from '@/db/seed-data'
 
 const args = new Set(process.argv.slice(2))
 const dryRun = args.has('--dry-run')
@@ -839,17 +748,21 @@ const file = parseSeedFile(raw)
 const stats = seedStats(file)
 
 console.log(`vendors: ${stats.vendorCount} · expenses: ${stats.expenseCount}`)
-console.log(`ยังไม่ระบุยอด: ${stats.unknownAmountCount} รายการ · หมวดที่เติมเอง: ${stats.filledCategoryCount} รายการ`)
+console.log(
+  `ยังไม่ระบุยอด: ${stats.unknownAmountCount} รายการ · หมวดที่เติมเอง: ${stats.filledCategoryCount} รายการ`,
+)
 
 if (dryRun) {
-  for (const vendor of file.vendors) {
+  file.vendors.forEach((vendor) => {
     console.log(`[vendor ${vendor.id}] ${vendor.name}`)
-  }
-  for (const expense of file.expenses) {
+  })
+  file.expenses.forEach((expense) => {
     const amount = expense.amount === null ? 'ยังไม่ระบุ' : expense.amount.toLocaleString('en-US')
     const paid = expense.isPaid ? 'จ่ายแล้ว' : 'ค้างจ่าย'
-    console.log(`[expense] ${expense.name} · ${expense.category ?? 'ไม่ระบุหมวด'} · ${amount} · ${paid} · vendor ${expense.vendorId ?? '-'}`)
-  }
+    console.log(
+      `[expense] ${expense.name} · ${expense.category ?? 'ไม่ระบุหมวด'} · ${amount} · ${paid} · vendor ${expense.vendorId ?? '-'}`,
+    )
+  })
   console.log('\n--dry-run: ไม่ได้เขียนอะไรลง DB')
   process.exit(0)
 }
@@ -1111,18 +1024,19 @@ export type AmountRow = { amount: number | null; isPaid: boolean }
 export type MoneySummary = { paid: number; unpaid: number; unknownCount: number }
 
 export function summarizeExpenses(rows: AmountRow[]): MoneySummary {
-  let paid = 0
-  let unpaid = 0
-  let unknownCount = 0
-
-  for (const row of rows) {
-    // null = ยังไม่รู้ยอด ห้ามนับเป็น 0 เพราะทำให้ตัวเลขค้างจ่ายต่ำกว่าความจริงเงียบๆ
-    if (row.amount === null) unknownCount += 1
-    else if (row.isPaid) paid += row.amount
-    else unpaid += row.amount
-  }
-
-  return { paid, unpaid, unknownCount }
+  return rows.reduce<MoneySummary>(
+    (acc, row) => {
+      // null = ยังไม่รู้ยอด ห้ามนับเป็น 0 เพราะทำให้ตัวเลขค้างจ่ายต่ำกว่าความจริงเงียบๆ
+      if (row.amount === null) {
+        return { paid: acc.paid, unpaid: acc.unpaid, unknownCount: acc.unknownCount + 1 }
+      }
+      if (row.isPaid) {
+        return { paid: acc.paid + row.amount, unpaid: acc.unpaid, unknownCount: acc.unknownCount }
+      }
+      return { paid: acc.paid, unpaid: acc.unpaid + row.amount, unknownCount: acc.unknownCount }
+    },
+    { paid: 0, unpaid: 0, unknownCount: 0 },
+  )
 }
 
 export type CategoryRow = AmountRow & { category: string | null }
@@ -1131,17 +1045,20 @@ export type CategorySummary = MoneySummary & { category: string; total: number; 
 export function summarizeByCategory(rows: CategoryRow[]): CategorySummary[] {
   const buckets = new Map<string, CategoryRow[]>()
 
-  for (const row of rows) {
+  rows.forEach((row) => {
     const key = row.category?.trim() || NO_CATEGORY
-    const bucket = buckets.get(key)
-    if (bucket) bucket.push(row)
-    else buckets.set(key, [row])
-  }
+    buckets.set(key, [...(buckets.get(key) ?? []), row])
+  })
 
   return [...buckets.entries()]
     .map(([category, bucketRows]) => {
       const summary = summarizeExpenses(bucketRows)
-      return { category, ...summary, total: summary.paid + summary.unpaid, count: bucketRows.length }
+      return {
+        category,
+        ...summary,
+        total: summary.paid + summary.unpaid,
+        count: bucketRows.length,
+      }
     })
     .sort((a, b) => b.total - a.total || a.category.localeCompare(b.category, 'th'))
 }
@@ -1152,35 +1069,51 @@ export function sumEnvelopes(rows: { amount: number }[]): number {
 
 export type NetSummary = MoneySummary & { received: number; net: number }
 
-export function summarizeNet(expenseRows: AmountRow[], envelopeRows: { amount: number }[]): NetSummary {
+export function summarizeNet(
+  expenseRows: AmountRow[],
+  envelopeRows: { amount: number }[],
+): NetSummary {
   const expenses = summarizeExpenses(expenseRows)
   const received = sumEnvelopes(envelopeRows)
   return { ...expenses, received, net: received - expenses.paid - expenses.unpaid }
 }
 
-export type GuestRow = { rsvp: Rsvp; companionsEstimated: number; companionsConfirmed: number | null }
-export type GuestCounts = { estimated: number; confirmed: number; declined: number; pending: number }
+export type GuestRow = {
+  rsvp: Rsvp
+  companionsEstimated: number
+  companionsConfirmed: number | null
+}
+export type GuestCounts = {
+  estimated: number
+  confirmed: number
+  declined: number
+  pending: number
+}
 
 export function countGuests(rows: GuestRow[]): GuestCounts {
-  let estimated = 0
-  let confirmed = 0
-  let declined = 0
-  let pending = 0
+  return rows.reduce<GuestCounts>(
+    (acc, row) => {
+      if (row.rsvp === 'no') {
+        return {
+          estimated: acc.estimated,
+          confirmed: acc.confirmed,
+          declined: acc.declined + 1,
+          pending: acc.pending,
+        }
+      }
 
-  for (const row of rows) {
-    if (row.rsvp === 'no') {
-      declined += 1
-      continue
-    }
-    if (row.rsvp === 'pending') pending += 1
-    estimated += 1 + row.companionsEstimated
-    if (row.rsvp === 'yes') {
+      const pending = row.rsvp === 'pending' ? acc.pending + 1 : acc.pending
+      const estimated = acc.estimated + 1 + row.companionsEstimated
       // null = ยังไม่ได้ถามผู้ติดตาม จึงยังต้องใช้ตัวเลขที่คาดไว้
-      confirmed += 1 + (row.companionsConfirmed ?? row.companionsEstimated)
-    }
-  }
+      const confirmed =
+        row.rsvp === 'yes'
+          ? acc.confirmed + 1 + (row.companionsConfirmed ?? row.companionsEstimated)
+          : acc.confirmed
 
-  return { estimated, confirmed, declined, pending }
+      return { estimated, confirmed, declined: acc.declined, pending }
+    },
+    { estimated: 0, confirmed: 0, declined: 0, pending: 0 },
+  )
 }
 
 export type VendorExpenseRow = AmountRow & { vendorId: number | null }
@@ -1189,26 +1122,36 @@ export type VendorSummary = MoneySummary & { total: number; count: number }
 export function summarizeByVendor(rows: VendorExpenseRow[]): Map<number, VendorSummary> {
   const buckets = new Map<number, VendorExpenseRow[]>()
 
-  for (const row of rows) {
-    if (row.vendorId === null) continue
-    const bucket = buckets.get(row.vendorId)
-    if (bucket) bucket.push(row)
-    else buckets.set(row.vendorId, [row])
-  }
+  rows
+    .filter((row): row is VendorExpenseRow & { vendorId: number } => row.vendorId !== null)
+    .forEach((row) => {
+      buckets.set(row.vendorId, [...(buckets.get(row.vendorId) ?? []), row])
+    })
 
-  const result = new Map<number, VendorSummary>()
-  for (const [vendorId, bucketRows] of buckets) {
-    const summary = summarizeExpenses(bucketRows)
-    result.set(vendorId, { ...summary, total: summary.paid + summary.unpaid, count: bucketRows.length })
-  }
-  return result
+  return new Map(
+    [...buckets.entries()].map(([vendorId, bucketRows]): [number, VendorSummary] => {
+      const summary = summarizeExpenses(bucketRows)
+      return [
+        vendorId,
+        { ...summary, total: summary.paid + summary.unpaid, count: bucketRows.length },
+      ]
+    }),
+  )
 }
 
-export type DeadlineRow = { id: number; name: string; status: ChecklistStatus; deadline: string | null }
+export type DeadlineRow = {
+  id: number
+  name: string
+  status: ChecklistStatus
+  deadline: string | null
+}
 
 export function upcomingDeadlines(rows: DeadlineRow[], limit = 5): DeadlineRow[] {
   return rows
-    .filter((row): row is DeadlineRow & { deadline: string } => row.status !== 'done' && row.deadline !== null)
+    .filter(
+      (row): row is DeadlineRow & { deadline: string } =>
+        row.status !== 'done' && row.deadline !== null,
+    )
     .sort((a, b) => a.deadline.localeCompare(b.deadline))
     .slice(0, limit)
 }
@@ -1234,8 +1177,9 @@ git commit -m "feat: add pure total functions for money, guests and vendors"
 - Create: `src/lib/action-result.ts`, `src/lib/schemas/shared.ts`, `src/lib/schemas/expense.ts`, `src/lib/schemas/envelope.ts`, `src/lib/schemas/guest.ts`, `src/lib/schemas/checklist.ts`, `src/lib/schemas/vendor.ts`, `tests/lib/schemas.test.ts`, `tests/lib/action-result.test.ts`
 
 **Interfaces:**
-- Consumes: `isBahtInput` `parseBaht` จาก `@/lib/money`
+- Consumes: ไม่มี
 - Produces:
+  - `optionalInteger` / `requiredInteger(label)` / `countOrZero` จาก `@/lib/schemas/shared` — helper ตัวเลขกลาง ไม่รู้เรื่องสกุลเงิน ใช้กับทุกช่องกรอกตัวเลขในระบบ (เงิน · งบ · จำนวนคน)
   - `type ActionResult = { ok: true } | { ok: false; message: string; detail?: string; fieldErrors?: Record<string, string> }`
   - `toActionResult(error: unknown): ActionResult`
   - `expenseInputSchema` / `expenseUpdateSchema` / `togglePaidSchema` + type `ExpenseInput` (ฝั่งฟอร์ม) `ExpenseValues` (ฝั่ง DB)
@@ -1426,7 +1370,6 @@ Expected: FAIL — หา module ไม่เจอ
 
 ```ts
 import * as v from 'valibot'
-import { isBahtInput, parseBaht } from '@/lib/money'
 
 export const idSchema = v.object({
   id: v.pipe(v.number(), v.integer(), v.minValue(1)),
@@ -1444,18 +1387,38 @@ export const optionalText = v.pipe(
   v.transform((s): string | null => (s === '' ? null : s)),
 )
 
-/** string เข้า → number | null ออก · '' = ยังไม่ระบุยอด */
-export const optionalBaht = v.pipe(
+const MAX_INT = 2_147_483_647
+
+/** ช่องกรอกตัวเลข: ตัดจุลภาคกับช่องว่างทิ้งก่อน แล้วรับเฉพาะจำนวนเต็มไม่ติดลบ */
+const digits = (s: string) => s.replace(/[,\s]/g, '')
+
+const isValidDigits = (s: string) => digits(s) === '' || /^\d+$/.test(digits(s))
+const isWithinRange = (s: string) => digits(s) === '' || Number(digits(s)) <= MAX_INT
+
+/** string เข้า → number | null ออก · '' = ยังไม่ระบุ (เช่น ยอดค่าใช้จ่าย · งบ checklist · ราคาเหมา vendor) */
+export const optionalInteger = v.pipe(
   v.string(),
-  v.check(isBahtInput, 'ยอดเงินต้องเป็นจำนวนเต็มบาท เช่น 70,000'),
-  v.transform((s): number | null => parseBaht(s)),
+  v.check(isValidDigits, 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
+  v.check(isWithinRange, 'ตัวเลขใหญ่เกินไป'),
+  v.transform((s): number | null => (digits(s) === '' ? null : Number(digits(s)))),
 )
 
-export const requiredBaht = v.pipe(
+/** string เข้า → number ออกเสมอ · '' = error เพราะเป็นช่องบังคับ (เช่น ยอดซอง) */
+export const requiredInteger = (label: string) =>
+  v.pipe(
+    v.string(),
+    v.check((s) => digits(s) !== '', `ต้องใส่${label}`),
+    v.check(isValidDigits, 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
+    v.check(isWithinRange, 'ตัวเลขใหญ่เกินไป'),
+    v.transform((s): number => Number(digits(s))),
+  )
+
+/** จำนวนคน — ว่างเปล่าถือเป็น 0 (เช่น companionsEstimated) */
+export const countOrZero = v.pipe(
   v.string(),
-  v.check(isBahtInput, 'ยอดเงินต้องเป็นจำนวนเต็มบาท เช่น 1,000'),
-  v.check((s) => parseBaht(s) !== null, 'ต้องใส่ยอดเงิน'),
-  v.transform((s): number => parseBaht(s) as number),
+  v.check(isValidDigits, 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
+  v.check(isWithinRange, 'ตัวเลขใหญ่เกินไป'),
+  v.transform((s): number => (digits(s) === '' ? 0 : Number(digits(s)))),
 )
 
 export const optionalId = v.pipe(
@@ -1472,25 +1435,7 @@ export const optionalDate = v.pipe(
   v.transform((s): string | null => (s.trim() === '' ? null : s.trim())),
 )
 
-export const requiredDate = v.pipe(
-  v.string(),
-  v.trim(),
-  v.regex(ISO_DATE, 'ต้องใส่วันที่'),
-)
-
-/** จำนวนคน — ว่างเปล่าถือเป็น 0 */
-export const requiredCount = v.pipe(
-  v.string(),
-  v.check((s) => s.trim() === '' || /^\d+$/.test(s.trim()), 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
-  v.transform((s): number => (s.trim() === '' ? 0 : Number(s))),
-)
-
-/** จำนวนคน — ว่างเปล่า = ยังไม่ได้ถาม (null) ต่างจาก 0 = ถามแล้วมาคนเดียว */
-export const optionalCount = v.pipe(
-  v.string(),
-  v.check((s) => s.trim() === '' || /^\d+$/.test(s.trim()), 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
-  v.transform((s): number | null => (s.trim() === '' ? null : Number(s))),
-)
+export const requiredDate = v.pipe(v.string(), v.trim(), v.regex(ISO_DATE, 'ต้องใส่วันที่'))
 ```
 
 - [ ] **Step 4: เขียน schema ของทั้ง 5 โมดูล**
@@ -1498,12 +1443,19 @@ export const optionalCount = v.pipe(
 `src/lib/schemas/expense.ts`:
 ```ts
 import * as v from 'valibot'
-import { idNumber, optionalBaht, optionalDate, optionalId, optionalText, requiredText } from './shared'
+import {
+  idNumber,
+  optionalDate,
+  optionalId,
+  optionalInteger,
+  optionalText,
+  requiredText,
+} from './shared'
 
 export const expenseInputSchema = v.object({
   name: requiredText('ชื่อรายการ'),
   category: optionalText,
-  amount: optionalBaht,
+  amount: optionalInteger,
   isPaid: v.boolean(),
   vendorId: optionalId,
   dueDate: optionalDate,
@@ -1521,11 +1473,11 @@ export type ExpenseValues = v.InferOutput<typeof expenseInputSchema>
 `src/lib/schemas/envelope.ts`:
 ```ts
 import * as v from 'valibot'
-import { idNumber, optionalText, requiredBaht, requiredDate } from './shared'
+import { idNumber, optionalText, requiredDate, requiredInteger } from './shared'
 
 export const envelopeInputSchema = v.object({
   giverName: optionalText,
-  amount: requiredBaht,
+  amount: requiredInteger('ยอดเงิน'),
   receivedAt: requiredDate,
   note: optionalText,
 })
@@ -1539,7 +1491,7 @@ export type EnvelopeValues = v.InferOutput<typeof envelopeInputSchema>
 `src/lib/schemas/guest.ts`:
 ```ts
 import * as v from 'valibot'
-import { idNumber, optionalCount, optionalText, requiredCount, requiredText } from './shared'
+import { countOrZero, idNumber, optionalInteger, optionalText, requiredText } from './shared'
 
 export const sideSchema = v.picklist(['groom', 'bride'], 'เลือกฝ่ายเจ้าบ่าวหรือเจ้าสาว')
 export const rsvpSchema = v.picklist(['pending', 'yes', 'no'], 'สถานะตอบรับไม่ถูกต้อง')
@@ -1548,8 +1500,8 @@ export const guestInputSchema = v.object({
   name: requiredText('ชื่อแขก'),
   side: sideSchema,
   group: optionalText,
-  companionsEstimated: requiredCount,
-  companionsConfirmed: optionalCount,
+  companionsEstimated: countOrZero,
+  companionsConfirmed: optionalInteger,
   rsvp: rsvpSchema,
   note: optionalText,
 })
@@ -1565,15 +1517,25 @@ export type GuestValues = v.InferOutput<typeof guestInputSchema>
 `src/lib/schemas/checklist.ts`:
 ```ts
 import * as v from 'valibot'
-import { idNumber, optionalBaht, optionalDate, optionalId, optionalText, requiredText } from './shared'
+import {
+  idNumber,
+  optionalDate,
+  optionalId,
+  optionalInteger,
+  optionalText,
+  requiredText,
+} from './shared'
 
-export const checklistStatusSchema = v.picklist(['not_started', 'in_progress', 'done'], 'สถานะไม่ถูกต้อง')
+export const checklistStatusSchema = v.picklist(
+  ['not_started', 'in_progress', 'done'],
+  'สถานะไม่ถูกต้อง',
+)
 
 export const checklistInputSchema = v.object({
   name: requiredText('ชื่องาน'),
   category: optionalText,
   status: checklistStatusSchema,
-  budget: optionalBaht,
+  budget: optionalInteger,
   deadline: optionalDate,
   depositPaid: v.boolean(),
   vendorId: optionalId,
@@ -1591,14 +1553,14 @@ export type ChecklistValues = v.InferOutput<typeof checklistInputSchema>
 `src/lib/schemas/vendor.ts`:
 ```ts
 import * as v from 'valibot'
-import { idNumber, optionalBaht, optionalText, requiredText } from './shared'
+import { idNumber, optionalInteger, optionalText, requiredText } from './shared'
 
 export const vendorInputSchema = v.object({
   name: requiredText('ชื่อผู้ให้บริการ'),
   role: optionalText,
   phone: optionalText,
   line: optionalText,
-  totalPrice: optionalBaht,
+  totalPrice: optionalInteger,
   note: optionalText,
 })
 
@@ -1620,11 +1582,12 @@ export type ActionResult =
 export function toActionResult(error: unknown): ActionResult {
   if (v.isValiError(error)) {
     const flat = v.flatten(error.issues)
-    const fieldErrors: Record<string, string> = {}
-    for (const [field, messages] of Object.entries(flat.nested ?? {})) {
-      const first = messages?.[0]
-      if (first) fieldErrors[field] = first
-    }
+    const fieldErrors = Object.fromEntries(
+      Object.entries(flat.nested ?? {}).flatMap(([field, messages]) => {
+        const first = messages?.[0]
+        return first ? [[field, first] as const] : []
+      }),
+    )
     return { ok: false, message: 'ข้อมูลที่กรอกยังไม่ถูกต้อง', fieldErrors }
   }
 
@@ -1657,7 +1620,7 @@ git commit -m "feat: add valibot schemas and ActionResult contract"
 ### Task 7: Theme token + component ที่ใช้ร่วมทั้งแอป
 
 **Files:**
-- Modify: `app/globals.css`
+- Modify: `src/app/globals.css`
 - Create: `src/lib/ui.ts`, `src/components/ui/{card,button,field,money,badge,data-table,page-header,confirm-button,empty-state,spinner}.tsx`, `tests/components/money.test.tsx`, `tests/components/badge.test.tsx`
 
 **Interfaces:**
@@ -1679,6 +1642,8 @@ describe('<Money>', () => {
     const html = renderToStaticMarkup(<Money value={70000} />)
     expect(html).toContain('value="70000"')
     expect(html).toContain('70,000')
+    // formatBaht ต่อหน่วยท้ายเสมอ (แก้ตามคำสั่งเจ้าของงาน 2026-09-02)
+    expect(html).toContain('บาท')
   })
 
   it('ไม่มีเลขไทยหลุดออกมา', () => {
@@ -1717,7 +1682,7 @@ describe('<Badge>', () => {
 Run: `bun test tests/components`
 Expected: FAIL — `Cannot find module '@/components/ui/money'`
 
-- [ ] **Step 3: เขียน `app/globals.css` ตัวจริง**
+- [ ] **Step 3: เขียน `src/app/globals.css` ตัวจริง**
 
 ```css
 @import "tailwindcss";
@@ -2024,7 +1989,7 @@ Expected: PASS
 
 ```bash
 bun run lint && bun test && bun run build
-git add app/globals.css src/lib/ui.ts src/components tests/components
+git add src/app/globals.css src/lib/ui.ts src/components tests/components
 git commit -m "feat: add theme tokens and shared ui components"
 ```
 
@@ -2033,12 +1998,12 @@ git commit -m "feat: add theme tokens and shared ui components"
 ### Task 8: โครงหน้าเว็บ — layout · nav · font · error/loading/not-found
 
 **Files:**
-- Modify: `app/layout.tsx`, `app/page.tsx`
-- Create: `app/error.tsx`, `app/loading.tsx`, `app/not-found.tsx`, `src/components/nav.tsx`
+- Modify: `src/app/layout.tsx`, `src/app/page.tsx`
+- Create: `src/app/error.tsx`, `src/app/loading.tsx`, `src/app/not-found.tsx`, `src/components/nav.tsx`
 
 **Interfaces:**
 - Consumes: `<Spinner>` `<Card>` `<Button>` จาก `@/components/ui/*`
-- Produces: layout ที่มี `<nav>` + `<main>` และตัวแปรฟอนต์ `--font-ibm-plex-sans-thai` ที่ `@theme` ชี้ถึง · ทุกหน้าใต้ `app/` ได้ error/loading/not-found ฟรี
+- Produces: layout ที่มี `<nav>` + `<main>` และตัวแปรฟอนต์ `--font-ibm-plex-sans-thai` ที่ `@theme` ชี้ถึง · ทุกหน้าใต้ `src/app/` ได้ error/loading/not-found ฟรี
 
 - [ ] **Step 1: `src/components/nav.tsx`**
 
@@ -2069,7 +2034,7 @@ export function Nav() {
 }
 ```
 
-- [ ] **Step 2: `app/layout.tsx` พร้อมฟอนต์และ metadata**
+- [ ] **Step 2: `src/app/layout.tsx` พร้อมฟอนต์และ metadata**
 
 ```tsx
 import type { Metadata } from 'next'
@@ -2103,9 +2068,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-- [ ] **Step 3: `app/loading.tsx` · `app/error.tsx` · `app/not-found.tsx`**
+- [ ] **Step 3: `src/app/loading.tsx` · `src/app/error.tsx` · `src/app/not-found.tsx`**
 
-`app/loading.tsx`:
+`src/app/loading.tsx`:
 ```tsx
 import { Spinner } from '@/components/ui/spinner'
 
@@ -2115,7 +2080,7 @@ export default function Loading() {
 }
 ```
 
-`app/error.tsx`:
+`src/app/error.tsx`:
 ```tsx
 'use client'
 
@@ -2139,7 +2104,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
 }
 ```
 
-`app/not-found.tsx`:
+`src/app/not-found.tsx`:
 ```tsx
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
@@ -2176,7 +2141,7 @@ git commit -m "feat: add app shell with nav, thai font and error boundaries"
 ### Task 9: โมดูล `/expenses`
 
 **Files:**
-- Create: `src/lib/date.ts`, `tests/lib/date.test.ts`, `src/components/ui/date-text.tsx`, `src/db/queries.ts`, `src/db/mutations.ts`, `app/expenses/page.tsx`, `app/expenses/actions.ts`, `app/expenses/expense-form.tsx`, `app/expenses/paid-toggle.tsx`, `app/expenses/delete-expense-button.tsx`
+- Create: `src/lib/date.ts`, `tests/lib/date.test.ts`, `src/components/ui/date-text.tsx`, `src/db/queries.ts`, `src/db/mutations.ts`, `src/app/expenses/page.tsx`, `src/app/expenses/actions.ts`, `src/app/expenses/expense-form.tsx`, `src/app/expenses/paid-toggle.tsx`, `src/app/expenses/delete-expense-button.tsx`
 
 **Interfaces:**
 - Consumes: `summarizeExpenses` `summarizeByCategory` จาก `@/lib/totals` · schema จาก `@/lib/schemas/expense` · `toActionResult` `ActionResult` · component จาก `@/components/ui/*`
@@ -2184,7 +2149,7 @@ git commit -m "feat: add app shell with nav, thai font and error boundaries"
   - `formatThaiDate(iso: string): string` และ `<DateText value={string} />`
   - `@/db/queries`: `loadExpensesPage(): Promise<{ rows: ExpenseWithVendor[]; vendorOptions: VendorOption[] }>` · `type ExpenseWithVendor` · `type VendorOption = { id: number; name: string }`
   - `@/db/mutations`: `createExpense` `updateExpense` `setExpensePaid` `deleteExpense`
-  - `app/expenses/actions.ts`: `createExpenseAction(raw): Promise<ActionResult>` · `updateExpenseAction` · `togglePaidAction` · `deleteExpenseAction`
+  - `src/app/expenses/actions.ts`: `createExpenseAction(raw): Promise<ActionResult>` · `updateExpenseAction` · `togglePaidAction` · `deleteExpenseAction`
   - หมายเหตุ: `updateExpenseAction` เขียนไว้ใน task นี้แต่ยังไม่มี UI เรียกจนถึง Task 15
 
 - [ ] **Step 1: เขียนเทสของ `formatThaiDate` ให้ fail ก่อน**
@@ -2327,7 +2292,7 @@ export async function deleteExpense(id: number): Promise<void> {
 }
 ```
 
-- [ ] **Step 7: `app/expenses/actions.ts`**
+- [ ] **Step 7: `src/app/expenses/actions.ts`**
 
 ```ts
 'use server'
@@ -2390,7 +2355,7 @@ export async function deleteExpenseAction(raw: unknown): Promise<ActionResult> {
 }
 ```
 
-- [ ] **Step 8: `app/expenses/expense-form.tsx`**
+- [ ] **Step 8: `src/app/expenses/expense-form.tsx`**
 
 ```tsx
 'use client'
@@ -2441,9 +2406,9 @@ export function ExpenseForm({ vendorOptions }: { vendorOptions: VendorOption[] }
       setServerError(null)
       return
     }
-    for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+    Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
-    }
+    })
     setServerError({ message: result.message, detail: result.detail })
   })
 
@@ -2510,7 +2475,7 @@ export function ExpenseForm({ vendorOptions }: { vendorOptions: VendorOption[] }
 }
 ```
 
-- [ ] **Step 9: `app/expenses/paid-toggle.tsx` และ `app/expenses/delete-expense-button.tsx`**
+- [ ] **Step 9: `src/app/expenses/paid-toggle.tsx` และ `src/app/expenses/delete-expense-button.tsx`**
 
 `paid-toggle.tsx`:
 ```tsx
@@ -2556,7 +2521,7 @@ export function DeleteExpenseButton({ id, name }: { id: number; name: string }) 
 }
 ```
 
-- [ ] **Step 10: `app/expenses/page.tsx`**
+- [ ] **Step 10: `src/app/expenses/page.tsx`**
 
 ```tsx
 import { Badge } from '@/components/ui/badge'
@@ -2578,7 +2543,7 @@ const COLUMNS = [
   { key: 'category', label: 'หมวด' },
   { key: 'vendor', label: 'ผู้ให้บริการ' },
   { key: 'due', label: 'กำหนดจ่าย' },
-  { key: 'amount', label: 'ยอด (บาท)', numeric: true },
+  { key: 'amount', label: 'ยอด', numeric: true },
   { key: 'status', label: 'สถานะ' },
   { key: 'actions', label: '' },
 ]
@@ -2692,13 +2657,13 @@ bun run dev
 ```bash
 bun run lint
 ```
-Expected: PASS (และถ้าลองเพิ่ม `import { createExpense } from '@/db/mutations'` ใน `app/expenses/page.tsx` ชั่วคราวต้องแดง — ลองแล้วเอาออก)
+Expected: PASS (และถ้าลองเพิ่ม `import { createExpense } from '@/db/mutations'` ใน `src/app/expenses/page.tsx` ชั่วคราวต้องแดง — ลองแล้วเอาออก)
 
 - [ ] **Step 13: Commit**
 
 ```bash
 bun test && bun run build
-git add src/lib/date.ts tests/lib/date.test.ts src/components/ui/date-text.tsx src/db/queries.ts src/db/mutations.ts app/expenses
+git add src/lib/date.ts tests/lib/date.test.ts src/components/ui/date-text.tsx src/db/queries.ts src/db/mutations.ts src/app/expenses
 git commit -m "feat: add expenses page with form, paid toggle and category summary"
 ```
 
@@ -2707,7 +2672,7 @@ git commit -m "feat: add expenses page with form, paid toggle and category summa
 ### Task 10: โมดูล `/envelopes`
 
 **Files:**
-- Create: `app/envelopes/page.tsx`, `app/envelopes/actions.ts`, `app/envelopes/envelope-form.tsx`, `app/envelopes/delete-envelope-button.tsx`
+- Create: `src/app/envelopes/page.tsx`, `src/app/envelopes/actions.ts`, `src/app/envelopes/envelope-form.tsx`, `src/app/envelopes/delete-envelope-button.tsx`
 - Modify: `src/db/queries.ts`, `src/db/mutations.ts`
 
 **Interfaces:**
@@ -2715,7 +2680,7 @@ git commit -m "feat: add expenses page with form, paid toggle and category summa
 - Produces:
   - `@/db/queries`: `listEnvelopes(): Promise<Envelope[]>`
   - `@/db/mutations`: `createEnvelope(values: EnvelopeValues)` `deleteEnvelope(id: number)`
-  - `app/envelopes/actions.ts`: `createEnvelopeAction` `deleteEnvelopeAction`
+  - `src/app/envelopes/actions.ts`: `createEnvelopeAction` `deleteEnvelopeAction`
 
 - [ ] **Step 1: เพิ่ม query และ mutation ของซอง**
 
@@ -2745,7 +2710,7 @@ export async function deleteEnvelope(id: number): Promise<void> {
 }
 ```
 
-- [ ] **Step 2: `app/envelopes/actions.ts`**
+- [ ] **Step 2: `src/app/envelopes/actions.ts`**
 
 ```ts
 'use server'
@@ -2785,7 +2750,7 @@ export async function deleteEnvelopeAction(raw: unknown): Promise<ActionResult> 
 }
 ```
 
-- [ ] **Step 3: `app/envelopes/envelope-form.tsx` — ฟอร์มกรอกเร็ววันงาน**
+- [ ] **Step 3: `src/app/envelopes/envelope-form.tsx` — ฟอร์มกรอกเร็ววันงาน**
 
 ```tsx
 'use client'
@@ -2828,9 +2793,9 @@ export function EnvelopeForm({ today }: { today: string }) {
       setServerError(null)
       return
     }
-    for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+    Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
-    }
+    })
     setServerError({ message: result.message, detail: result.detail })
   })
 
@@ -2887,7 +2852,7 @@ export function EnvelopeForm({ today }: { today: string }) {
 }
 ```
 
-- [ ] **Step 4: `app/envelopes/delete-envelope-button.tsx`**
+- [ ] **Step 4: `src/app/envelopes/delete-envelope-button.tsx`**
 
 ```tsx
 'use client'
@@ -2904,7 +2869,7 @@ export function DeleteEnvelopeButton({ id, label }: { id: number; label: string 
 }
 ```
 
-- [ ] **Step 5: `app/envelopes/page.tsx`**
+- [ ] **Step 5: `src/app/envelopes/page.tsx`**
 
 ```tsx
 import { Card } from '@/components/ui/card'
@@ -2940,7 +2905,7 @@ export default async function EnvelopesPage() {
             { key: 'giver', label: 'ผู้ให้' },
             { key: 'received', label: 'วันที่รับ' },
             { key: 'note', label: 'หมายเหตุ' },
-            { key: 'amount', label: 'ยอด (บาท)', numeric: true },
+            { key: 'amount', label: 'ยอด', numeric: true },
             { key: 'actions', label: '' },
           ]}
           isEmpty={rows.length === 0}
@@ -2983,7 +2948,7 @@ bun run dev
 
 ```bash
 bun run lint && bun test && bun run build
-git add app/envelopes src/db/queries.ts src/db/mutations.ts
+git add src/app/envelopes src/db/queries.ts src/db/mutations.ts
 git commit -m "feat: add envelopes page with fast entry form"
 ```
 
@@ -2992,7 +2957,7 @@ git commit -m "feat: add envelopes page with fast entry form"
 ### Task 11: หน้า `/` — dashboard
 
 **Files:**
-- Create: `app/page.tsx` (เขียนทับหน้า placeholder)
+- Create: `src/app/page.tsx` (เขียนทับหน้า placeholder)
 - Modify: `src/db/queries.ts`
 
 **Interfaces:**
@@ -3041,7 +3006,7 @@ export async function loadDashboard(): Promise<{
 }
 ```
 
-- [ ] **Step 2: เขียน `app/page.tsx`**
+- [ ] **Step 2: เขียน `src/app/page.tsx`**
 
 ```tsx
 import Link from 'next/link'
@@ -3168,7 +3133,7 @@ Expected: ในตาราง route ที่ Next พิมพ์ออกม
 
 ```bash
 bun run lint && bun test
-git add app/page.tsx src/db/queries.ts
+git add src/app/page.tsx src/db/queries.ts
 git commit -m "feat: add dashboard with batched query and net summary"
 ```
 
@@ -3177,7 +3142,7 @@ git commit -m "feat: add dashboard with batched query and net summary"
 ### Task 12: โมดูล `/guests`
 
 **Files:**
-- Create: `app/guests/page.tsx`, `app/guests/actions.ts`, `app/guests/guest-form.tsx`, `app/guests/guest-table.tsx`, `app/guests/rsvp-select.tsx`
+- Create: `src/app/guests/page.tsx`, `src/app/guests/actions.ts`, `src/app/guests/guest-form.tsx`, `src/app/guests/guest-table.tsx`, `src/app/guests/rsvp-select.tsx`
 - Modify: `src/db/queries.ts`, `src/db/mutations.ts`
 
 **Interfaces:**
@@ -3185,7 +3150,7 @@ git commit -m "feat: add dashboard with batched query and net summary"
 - Produces:
   - `@/db/queries`: `listGuests(): Promise<Guest[]>`
   - `@/db/mutations`: `createGuest(values: GuestValues)` `setGuestRsvp(id, rsvp)` `deleteGuest(id)`
-  - `app/guests/actions.ts`: `createGuestAction` `setRsvpAction` `deleteGuestAction`
+  - `src/app/guests/actions.ts`: `createGuestAction` `setRsvpAction` `deleteGuestAction`
 
 - [ ] **Step 1: เพิ่ม query และ mutation ของแขก**
 
@@ -3219,7 +3184,7 @@ export async function deleteGuest(id: number): Promise<void> {
 }
 ```
 
-- [ ] **Step 2: `app/guests/actions.ts`**
+- [ ] **Step 2: `src/app/guests/actions.ts`**
 
 ```ts
 'use server'
@@ -3270,7 +3235,7 @@ export async function deleteGuestAction(raw: unknown): Promise<ActionResult> {
 }
 ```
 
-- [ ] **Step 3: `app/guests/guest-form.tsx` — เพิ่มทีละคน จำฝั่ง/กลุ่มล่าสุด**
+- [ ] **Step 3: `src/app/guests/guest-form.tsx` — เพิ่มทีละคน จำฝั่ง/กลุ่มล่าสุด**
 
 ```tsx
 'use client'
@@ -3323,9 +3288,9 @@ export function GuestForm() {
       setServerError(null)
       return
     }
-    for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+    Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
-    }
+    })
     setServerError({ message: result.message, detail: result.detail })
   })
 
@@ -3405,7 +3370,7 @@ export function GuestForm() {
 }
 ```
 
-- [ ] **Step 4: `app/guests/rsvp-select.tsx`**
+- [ ] **Step 4: `src/app/guests/rsvp-select.tsx`**
 
 ```tsx
 'use client'
@@ -3439,7 +3404,7 @@ export function RsvpSelect({ id, rsvp, name }: { id: number; rsvp: Rsvp; name: s
 }
 ```
 
-- [ ] **Step 5: `app/guests/guest-table.tsx` — ค้นหา/filter ฝั่ง client**
+- [ ] **Step 5: `src/app/guests/guest-table.tsx` — ค้นหา/filter ฝั่ง client**
 
 ```tsx
 'use client'
@@ -3555,7 +3520,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
 }
 ```
 
-- [ ] **Step 6: `app/guests/page.tsx`**
+- [ ] **Step 6: `src/app/guests/page.tsx`**
 
 ```tsx
 import { Card } from '@/components/ui/card'
@@ -3603,7 +3568,7 @@ APP_ENV=development bun run dev
 
 ```bash
 bun run lint && bun test && bun run build
-git add app/guests src/db/queries.ts src/db/mutations.ts
+git add src/app/guests src/db/queries.ts src/db/mutations.ts
 git commit -m "feat: add guests page with client-side filter and rsvp toggle"
 ```
 
@@ -3612,7 +3577,7 @@ git commit -m "feat: add guests page with client-side filter and rsvp toggle"
 ### Task 13: โมดูล `/checklist`
 
 **Files:**
-- Create: `app/checklist/page.tsx`, `app/checklist/actions.ts`, `app/checklist/checklist-form.tsx`, `app/checklist/status-select.tsx`, `app/checklist/delete-checklist-button.tsx`
+- Create: `src/app/checklist/page.tsx`, `src/app/checklist/actions.ts`, `src/app/checklist/checklist-form.tsx`, `src/app/checklist/status-select.tsx`, `src/app/checklist/delete-checklist-button.tsx`
 - Modify: `src/db/queries.ts`, `src/db/mutations.ts`
 
 **Interfaces:**
@@ -3620,7 +3585,7 @@ git commit -m "feat: add guests page with client-side filter and rsvp toggle"
 - Produces:
   - `@/db/queries`: `loadChecklistPage(): Promise<{ items: ChecklistWithVendor[]; vendorOptions: VendorOption[] }>`
   - `@/db/mutations`: `createChecklistItem` `setChecklistStatus` `deleteChecklistItem`
-  - `app/checklist/actions.ts`: `createChecklistItemAction` `setChecklistStatusAction` `deleteChecklistItemAction`
+  - `src/app/checklist/actions.ts`: `createChecklistItemAction` `setChecklistStatusAction` `deleteChecklistItemAction`
 
 - [ ] **Step 1: เพิ่ม query และ mutation ของ checklist**
 
@@ -3687,7 +3652,7 @@ export async function deleteChecklistItem(id: number): Promise<void> {
 }
 ```
 
-- [ ] **Step 2: `app/checklist/actions.ts`**
+- [ ] **Step 2: `src/app/checklist/actions.ts`**
 
 ```ts
 'use server'
@@ -3738,7 +3703,7 @@ export async function deleteChecklistItemAction(raw: unknown): Promise<ActionRes
 }
 ```
 
-- [ ] **Step 3: `app/checklist/checklist-form.tsx`**
+- [ ] **Step 3: `src/app/checklist/checklist-form.tsx`**
 
 ```tsx
 'use client'
@@ -3789,9 +3754,9 @@ export function ChecklistForm({ vendorOptions }: { vendorOptions: VendorOption[]
       setServerError(null)
       return
     }
-    for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+    Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
-    }
+    })
     setServerError({ message: result.message, detail: result.detail })
   })
 
@@ -3868,7 +3833,7 @@ export function ChecklistForm({ vendorOptions }: { vendorOptions: VendorOption[]
 }
 ```
 
-- [ ] **Step 4: `app/checklist/status-select.tsx` และ `delete-checklist-button.tsx`**
+- [ ] **Step 4: `src/app/checklist/status-select.tsx` และ `delete-checklist-button.tsx`**
 
 `status-select.tsx`:
 ```tsx
@@ -3919,7 +3884,7 @@ export function DeleteChecklistButton({ id, name }: { id: number; name: string }
 }
 ```
 
-- [ ] **Step 5: `app/checklist/page.tsx` — จัดกลุ่มตามสถานะ**
+- [ ] **Step 5: `src/app/checklist/page.tsx` — จัดกลุ่มตามสถานะ**
 
 ```tsx
 import { Card } from '@/components/ui/card'
@@ -4017,7 +3982,7 @@ bun run dev
 
 ```bash
 bun run lint && bun test && bun run build
-git add app/checklist src/db/queries.ts src/db/mutations.ts
+git add src/app/checklist src/db/queries.ts src/db/mutations.ts
 git commit -m "feat: add checklist page grouped by status"
 ```
 
@@ -4026,7 +3991,7 @@ git commit -m "feat: add checklist page grouped by status"
 ### Task 14: โมดูล `/vendors`
 
 **Files:**
-- Create: `app/vendors/page.tsx`, `app/vendors/actions.ts`, `app/vendors/vendor-form.tsx`, `app/vendors/delete-vendor-button.tsx`
+- Create: `src/app/vendors/page.tsx`, `src/app/vendors/actions.ts`, `src/app/vendors/vendor-form.tsx`, `src/app/vendors/delete-vendor-button.tsx`
 - Modify: `src/db/queries.ts`, `src/db/mutations.ts`
 
 **Interfaces:**
@@ -4034,7 +3999,7 @@ git commit -m "feat: add checklist page grouped by status"
 - Produces:
   - `@/db/queries`: `loadVendorsPage(): Promise<{ vendorRows: Vendor[]; expenseRows: VendorExpenseRow[] }>` — JOIN ครั้งเดียว ห้ามวนหายอดทีละเจ้า
   - `@/db/mutations`: `createVendor(values: VendorValues)` `deleteVendor(id)`
-  - `app/vendors/actions.ts`: `createVendorAction` `deleteVendorAction`
+  - `src/app/vendors/actions.ts`: `createVendorAction` `deleteVendorAction`
 
 - [ ] **Step 1: เพิ่ม query และ mutation ของ vendor**
 
@@ -4061,16 +4026,11 @@ export async function loadVendorsPage(): Promise<{ vendorRows: Vendor[]; expense
     .leftJoin(expenses, eq(expenses.vendorId, vendors.id))
     .orderBy(asc(vendors.id), asc(expenses.id))
 
-  const vendorMap = new Map<number, Vendor>()
-  const expenseRows: VendorExpenseRow[] = []
-
-  for (const row of joined) {
-    vendorMap.set(row.vendor.id, row.vendor)
-    // leftJoin ให้แถวที่ไม่มี expense กลับมาด้วย — แถวแบบนั้นไม่ใช่ค่าใช้จ่าย
-    if (row.expenseId !== null) {
-      expenseRows.push({ vendorId: row.vendor.id, amount: row.amount, isPaid: row.isPaid })
-    }
-  }
+  const vendorMap = new Map(joined.map((row) => [row.vendor.id, row.vendor]))
+  // leftJoin ให้แถวที่ไม่มี expense กลับมาด้วย — แถวแบบนั้นไม่ใช่ค่าใช้จ่าย
+  const expenseRows: VendorExpenseRow[] = joined
+    .filter((row) => row.expenseId !== null)
+    .map((row) => ({ vendorId: row.vendor.id, amount: row.amount, isPaid: row.isPaid }))
 
   return { vendorRows: [...vendorMap.values()], expenseRows }
 }
@@ -4090,7 +4050,7 @@ export async function deleteVendor(id: number): Promise<void> {
 }
 ```
 
-- [ ] **Step 2: `app/vendors/actions.ts`**
+- [ ] **Step 2: `src/app/vendors/actions.ts`**
 
 ```ts
 'use server'
@@ -4133,7 +4093,7 @@ export async function deleteVendorAction(raw: unknown): Promise<ActionResult> {
 }
 ```
 
-- [ ] **Step 3: `app/vendors/vendor-form.tsx`**
+- [ ] **Step 3: `src/app/vendors/vendor-form.tsx`**
 
 ```tsx
 'use client'
@@ -4174,9 +4134,9 @@ export function VendorForm() {
       setServerError(null)
       return
     }
-    for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+    Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
-    }
+    })
     setServerError({ message: result.message, detail: result.detail })
   })
 
@@ -4224,7 +4184,7 @@ export function VendorForm() {
 }
 ```
 
-- [ ] **Step 4: `app/vendors/delete-vendor-button.tsx`**
+- [ ] **Step 4: `src/app/vendors/delete-vendor-button.tsx`**
 
 ```tsx
 'use client'
@@ -4241,7 +4201,7 @@ export function DeleteVendorButton({ id, name }: { id: number; name: string }) {
 }
 ```
 
-- [ ] **Step 5: `app/vendors/page.tsx`**
+- [ ] **Step 5: `src/app/vendors/page.tsx`**
 
 ```tsx
 import { Card } from '@/components/ui/card'
@@ -4331,7 +4291,7 @@ APP_ENV=development bun run dev
 
 ```bash
 bun run lint && bun test && bun run build
-git add app/vendors src/db/queries.ts src/db/mutations.ts
+git add src/app/vendors src/db/queries.ts src/db/mutations.ts
 git commit -m "feat: add vendors page with per-vendor totals from a single join"
 ```
 
@@ -4342,22 +4302,22 @@ git commit -m "feat: add vendors page with per-vendor totals from a single join"
 ทำไมต้องมี: สเปคข้อ 7 บอกว่า 6 รายการยังไม่รู้ยอด · 12 รายการเรื่องชุด/พรีเวดดิ้งยังไม่ผูก vendor · ชื่อ/เบอร์/LINE ของ vendor 3–8 เว้นว่างไว้ให้เจ้าของงานเติมเอง ทั้งสามอย่างนี้ต้องแก้ได้ในเว็บ ไม่งั้นข้อมูลที่ตั้งใจปล่อยว่างไว้จะเติมไม่ได้เลย
 
 **Files:**
-- Modify: `app/expenses/expense-form.tsx`, `app/expenses/page.tsx`, `app/vendors/vendor-form.tsx`, `app/vendors/page.tsx`, `app/vendors/actions.ts`, `src/db/mutations.ts`
-- Create: `app/expenses/expense-row.tsx`, `app/vendors/vendor-row.tsx`
+- Modify: `src/app/expenses/expense-form.tsx`, `src/app/expenses/page.tsx`, `src/app/vendors/vendor-form.tsx`, `src/app/vendors/page.tsx`, `src/app/vendors/actions.ts`, `src/db/mutations.ts`
+- Create: `src/app/expenses/expense-row.tsx`, `src/app/vendors/vendor-row.tsx`
 
 **Interfaces:**
 - Consumes: `updateExpenseAction` (มีแล้วจาก Task 9) · `expenseInputSchema` `vendorInputSchema` · `ExpenseWithVendor` `Vendor`
 - Produces:
-  - `app/expenses/expense-form.tsx`: `ExpenseForm({ vendorOptions, initial?, onDone? })` · `toExpenseFormValues(row: ExpenseWithVendor): ExpenseFormInitial`
-  - `app/expenses/expense-row.tsx`: `ExpenseRow({ row, vendorOptions, columnCount })`
+  - `src/app/expenses/expense-form.tsx`: `ExpenseForm({ vendorOptions, initial?, onDone? })` · `toExpenseFormValues(row: ExpenseWithVendor): ExpenseFormInitial`
+  - `src/app/expenses/expense-row.tsx`: `ExpenseRow({ row, vendorOptions, columnCount })`
   - `@/db/mutations`: `updateVendor(id: number, values: VendorValues)`
-  - `app/vendors/actions.ts`: `updateVendorAction(raw): Promise<ActionResult>`
-  - `app/vendors/vendor-form.tsx`: `VendorForm({ initial?, onDone? })` · `toVendorFormValues(vendor: Vendor): VendorFormInitial`
-  - `app/vendors/vendor-row.tsx`: `VendorRow({ vendor, summary, columnCount })`
+  - `src/app/vendors/actions.ts`: `updateVendorAction(raw): Promise<ActionResult>`
+  - `src/app/vendors/vendor-form.tsx`: `VendorForm({ initial?, onDone? })` · `toVendorFormValues(vendor: Vendor): VendorFormInitial`
+  - `src/app/vendors/vendor-row.tsx`: `VendorRow({ vendor, summary, columnCount })`
 
 - [ ] **Step 1: ให้ `ExpenseForm` รับค่าเริ่มต้นเพื่อใช้แก้ไขได้ด้วย**
 
-แก้ `app/expenses/expense-form.tsx` — เพิ่ม import `updateExpenseAction`, เพิ่ม type และแทนที่ signature กับ `onSubmit` ด้วยของใหม่ทั้งก้อน:
+แก้ `src/app/expenses/expense-form.tsx` — เพิ่ม import `updateExpenseAction`, เพิ่ม type และแทนที่ signature กับ `onSubmit` ด้วยของใหม่ทั้งก้อน:
 
 ```tsx
 import { createExpenseAction, updateExpenseAction } from './actions'
@@ -4411,9 +4371,9 @@ export function ExpenseForm({
       return
     }
 
-    for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+    Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
-    }
+    })
     setServerError({ message: result.message, detail: result.detail })
   })
 ```
@@ -4443,7 +4403,7 @@ export function ExpenseForm({
         </div>
 ```
 
-- [ ] **Step 2: `app/expenses/expense-row.tsx`**
+- [ ] **Step 2: `src/app/expenses/expense-row.tsx`**
 
 ```tsx
 'use client'
@@ -4513,7 +4473,7 @@ export function ExpenseRow({
 }
 ```
 
-- [ ] **Step 3: ให้ `app/expenses/page.tsx` ใช้ `<ExpenseRow>`**
+- [ ] **Step 3: ให้ `src/app/expenses/page.tsx` ใช้ `<ExpenseRow>`**
 
 แทนที่ `{rows.map(...)}` ในตารางแรกทั้งก้อนด้วย:
 ```tsx
@@ -4532,7 +4492,7 @@ export async function updateVendor(id: number, values: VendorValues): Promise<vo
 }
 ```
 
-ต่อท้าย `app/vendors/actions.ts` (และเพิ่ม `updateVendor` เข้าไปใน import จาก `@/db/mutations` กับ `vendorUpdateSchema` จาก `@/lib/schemas/vendor`):
+ต่อท้าย `src/app/vendors/actions.ts` (และเพิ่ม `updateVendor` เข้าไปใน import จาก `@/db/mutations` กับ `vendorUpdateSchema` จาก `@/lib/schemas/vendor`):
 ```ts
 export async function updateVendorAction(raw: unknown): Promise<ActionResult> {
   try {
@@ -4548,7 +4508,7 @@ export async function updateVendorAction(raw: unknown): Promise<ActionResult> {
 
 - [ ] **Step 5: ให้ `VendorForm` รับค่าเริ่มต้น**
 
-แก้ `app/vendors/vendor-form.tsx` เหมือนที่ทำกับ `ExpenseForm`:
+แก้ `src/app/vendors/vendor-form.tsx` เหมือนที่ทำกับ `ExpenseForm`:
 ```tsx
 import type { Vendor } from '@/db/schema'
 import { createVendorAction, updateVendorAction } from './actions'
@@ -4591,9 +4551,9 @@ export function VendorForm({ initial, onDone }: { initial?: VendorFormInitial; o
       return
     }
 
-    for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+    Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
-    }
+    })
     setServerError({ message: result.message, detail: result.detail })
   })
 ```
@@ -4623,7 +4583,7 @@ export function VendorForm({ initial, onDone }: { initial?: VendorFormInitial; o
         </div>
 ```
 
-- [ ] **Step 6: `app/vendors/vendor-row.tsx`**
+- [ ] **Step 6: `src/app/vendors/vendor-row.tsx`**
 
 ```tsx
 'use client'
@@ -4683,7 +4643,7 @@ export function VendorRow({
 }
 ```
 
-- [ ] **Step 7: ให้ `app/vendors/page.tsx` ใช้ `<VendorRow>`**
+- [ ] **Step 7: ให้ `src/app/vendors/page.tsx` ใช้ `<VendorRow>`**
 
 แทนที่ `{vendorRows.map(...)}` ทั้งก้อนด้วย:
 ```tsx
@@ -4713,7 +4673,7 @@ bun run dev
 
 ```bash
 bun run lint && bun test && bun run build
-git add app/expenses app/vendors src/db/mutations.ts
+git add src/app/expenses src/app/vendors src/db/mutations.ts
 git commit -m "feat: edit expenses and vendors inline"
 ```
 
@@ -4722,8 +4682,8 @@ git commit -m "feat: edit expenses and vendors inline"
 ### Task 16: แก้ไขรายการในตาราง — `/envelopes` · `/guests` · `/checklist`
 
 **Files:**
-- Modify: `src/db/mutations.ts`, `app/envelopes/actions.ts`, `app/envelopes/envelope-form.tsx`, `app/envelopes/page.tsx`, `app/guests/actions.ts`, `app/guests/guest-form.tsx`, `app/guests/guest-table.tsx`, `app/checklist/actions.ts`, `app/checklist/checklist-form.tsx`, `app/checklist/page.tsx`
-- Create: `app/envelopes/envelope-row.tsx`, `app/guests/guest-row.tsx`, `app/checklist/checklist-row.tsx`
+- Modify: `src/db/mutations.ts`, `src/app/envelopes/actions.ts`, `src/app/envelopes/envelope-form.tsx`, `src/app/envelopes/page.tsx`, `src/app/guests/actions.ts`, `src/app/guests/guest-form.tsx`, `src/app/guests/guest-table.tsx`, `src/app/checklist/actions.ts`, `src/app/checklist/checklist-form.tsx`, `src/app/checklist/page.tsx`
+- Create: `src/app/envelopes/envelope-row.tsx`, `src/app/guests/guest-row.tsx`, `src/app/checklist/checklist-row.tsx`
 
 **Interfaces:**
 - Consumes: `envelopeUpdateSchema` `guestUpdateSchema` `checklistUpdateSchema` (มีแล้วจาก Task 6)
@@ -4754,7 +4714,7 @@ export async function updateChecklistItem(id: number, values: ChecklistValues): 
 
 - [ ] **Step 2: เพิ่ม action ทั้งสามตัว**
 
-ต่อท้าย `app/envelopes/actions.ts`:
+ต่อท้าย `src/app/envelopes/actions.ts`:
 ```ts
 export async function updateEnvelopeAction(raw: unknown): Promise<ActionResult> {
   try {
@@ -4768,7 +4728,7 @@ export async function updateEnvelopeAction(raw: unknown): Promise<ActionResult> 
 }
 ```
 
-ต่อท้าย `app/guests/actions.ts`:
+ต่อท้าย `src/app/guests/actions.ts`:
 ```ts
 export async function updateGuestAction(raw: unknown): Promise<ActionResult> {
   try {
@@ -4782,7 +4742,7 @@ export async function updateGuestAction(raw: unknown): Promise<ActionResult> {
 }
 ```
 
-ต่อท้าย `app/checklist/actions.ts`:
+ต่อท้าย `src/app/checklist/actions.ts`:
 ```ts
 export async function updateChecklistItemAction(raw: unknown): Promise<ActionResult> {
   try {
@@ -4799,7 +4759,7 @@ export async function updateChecklistItemAction(raw: unknown): Promise<ActionRes
 
 - [ ] **Step 3: ให้ทั้งสามฟอร์มรับค่าเริ่มต้น**
 
-`app/envelopes/envelope-form.tsx` — เพิ่ม:
+`src/app/envelopes/envelope-form.tsx` — เพิ่ม:
 ```tsx
 import type { Envelope } from '@/db/schema'
 import { createEnvelopeAction, updateEnvelopeAction } from './actions'
@@ -4832,15 +4792,15 @@ export function toEnvelopeFormValues(row: Envelope): EnvelopeFormInitial {
       return
     }
 
-    for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+    Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
-    }
+    })
     setServerError({ message: result.message, detail: result.detail })
   })
 ```
 และปุ่ม submit เป็น `{initial ? 'บันทึกการแก้ไข' : 'บันทึกซอง'}` พร้อมปุ่ม "ยกเลิก" แบบเดียวกับ Task 15 Step 1
 
-`app/guests/guest-form.tsx` — เพิ่ม:
+`src/app/guests/guest-form.tsx` — เพิ่ม:
 ```tsx
 import type { Guest } from '@/db/schema'
 import { createGuestAction, updateGuestAction } from './actions'
@@ -4877,15 +4837,15 @@ export function toGuestFormValues(guest: Guest): GuestFormInitial {
       return
     }
 
-    for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+    Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
-    }
+    })
     setServerError({ message: result.message, detail: result.detail })
   })
 ```
 ปุ่ม submit เป็น `{initial ? 'บันทึกการแก้ไข' : 'เพิ่มแขก'}` พร้อมปุ่ม "ยกเลิก"
 
-`app/checklist/checklist-form.tsx` — เพิ่ม:
+`src/app/checklist/checklist-form.tsx` — เพิ่ม:
 ```tsx
 import type { ChecklistWithVendor } from '@/db/queries'
 import { createChecklistItemAction, updateChecklistItemAction } from './actions'
@@ -4920,15 +4880,15 @@ export function toChecklistFormValues(row: ChecklistWithVendor): ChecklistFormIn
       return
     }
 
-    for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
+    Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
-    }
+    })
     setServerError({ message: result.message, detail: result.detail })
   })
 ```
 ปุ่ม submit เป็น `{initial ? 'บันทึกการแก้ไข' : 'เพิ่มงาน'}` พร้อมปุ่ม "ยกเลิก"
 
-- [ ] **Step 4: `app/envelopes/envelope-row.tsx`**
+- [ ] **Step 4: `src/app/envelopes/envelope-row.tsx`**
 
 ```tsx
 'use client'
@@ -4979,14 +4939,14 @@ export function EnvelopeRow({ row, columnCount }: { row: Envelope; columnCount: 
 }
 ```
 
-แล้วใน `app/envelopes/page.tsx` แทนที่ `{rows.map(...)}` ด้วย:
+แล้วใน `src/app/envelopes/page.tsx` แทนที่ `{rows.map(...)}` ด้วย:
 ```tsx
           {rows.map((row) => (
             <EnvelopeRow key={row.id} row={row} columnCount={5} />
           ))}
 ```
 
-- [ ] **Step 5: `app/guests/guest-row.tsx` และให้ `GuestTable` ใช้**
+- [ ] **Step 5: `src/app/guests/guest-row.tsx` และให้ `GuestTable` ใช้**
 
 ```tsx
 'use client'
@@ -5037,7 +4997,7 @@ export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: nu
 }
 ```
 
-ใน `app/guests/guest-table.tsx` แทนที่ `{filtered.map(...)}` ด้วย:
+ใน `src/app/guests/guest-table.tsx` แทนที่ `{filtered.map(...)}` ด้วย:
 ```tsx
         {filtered.map((guest) => (
           <GuestRow key={guest.id} guest={guest} columnCount={COLUMNS.length} />
@@ -5045,7 +5005,7 @@ export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: nu
 ```
 แล้วลบ import `ConfirmButton` `RsvpSelect` `deleteGuestAction` ที่ไม่ได้ใช้แล้ว และเพิ่ม `import { GuestRow } from './guest-row'`
 
-- [ ] **Step 6: `app/checklist/checklist-row.tsx` และให้หน้า checklist ใช้**
+- [ ] **Step 6: `src/app/checklist/checklist-row.tsx` และให้หน้า checklist ใช้**
 
 ```tsx
 'use client'
@@ -5109,7 +5069,7 @@ export function ChecklistRow({
 }
 ```
 
-ใน `app/checklist/page.tsx` แทนที่ `{group.rows.map(...)}` ด้วย:
+ใน `src/app/checklist/page.tsx` แทนที่ `{group.rows.map(...)}` ด้วย:
 ```tsx
             {group.rows.map((row) => (
               <ChecklistRow key={row.id} row={row} vendorOptions={vendorOptions} columnCount={COLUMNS.length} />
@@ -5168,12 +5128,12 @@ Expected: ทั้ง 6 route (`/`, `/expenses`, `/envelopes`, `/guests`, `/che
 
 ```bash
 # ใส่ import ต้องห้ามชั่วคราวในทุกหน้า แล้วต้องแดงทุกอัน
-for page in app/page.tsx app/expenses/page.tsx app/envelopes/page.tsx app/guests/page.tsx app/checklist/page.tsx app/vendors/page.tsx; do
+for page in src/app/page.tsx src/app/expenses/page.tsx src/app/envelopes/page.tsx src/app/guests/page.tsx src/app/checklist/page.tsx src/app/vendors/page.tsx; do
   cp "$page" "$page.bak"
   printf "import { deleteExpense } from '@/db/mutations'\n%s" "$(cat "$page")" > "$page"
 done
 bun run lint
-for page in app/page.tsx app/expenses/page.tsx app/envelopes/page.tsx app/guests/page.tsx app/checklist/page.tsx app/vendors/page.tsx; do
+for page in src/app/page.tsx src/app/expenses/page.tsx src/app/envelopes/page.tsx src/app/guests/page.tsx src/app/checklist/page.tsx src/app/vendors/page.tsx; do
   mv "$page.bak" "$page"
 done
 bun run lint
@@ -5185,7 +5145,7 @@ Expected: รอบแรก Biome รายงาน `noRestrictedImports` **�
 (มันดูได้แค่ import specifier):
 
 ```bash
-grep -rn "'use client'" app/**/page.tsx app/**/layout.tsx app/page.tsx app/layout.tsx
+grep -rn "'use client'" src/app/**/page.tsx src/app/**/layout.tsx src/app/page.tsx src/app/layout.tsx
 ```
 Expected: ไม่เจอสักบรรทัด (`grep` คืน exit 1) — ถ้าเจอ แปลว่ามีหน้าที่กลายเป็น client component
 ต้องย้ายส่วนที่โต้ตอบออกไปเป็น leaf component ก่อนปิดงาน

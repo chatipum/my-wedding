@@ -166,9 +166,9 @@ Notion ไม่มีตัวเลขนี้ dashboard จึงแสด�
 ### โครงไฟล์ — 3 ไฟล์ต่อ 1 โมดูล
 
 ```
-app/expenses/page.tsx           server component: query → render (ห้ามมี 'use client')
-app/expenses/actions.ts         'use server': create / update / toggle / delete
-app/expenses/expense-form.tsx   client component: react-hook-form
+src/app/expenses/page.tsx           server component: query → render (ห้ามมี 'use client')
+src/app/expenses/actions.ts         'use server': create / update / toggle / delete
+src/app/expenses/expense-form.tsx   client component: react-hook-form
 ```
 
 รูปแบบเดียวกันทั้ง 5 โมดูล
@@ -179,13 +179,13 @@ src/db/index.ts         drizzle({ client: neon(process.env.DATABASE_URL) }) + �
 src/db/queries.ts       ฟังก์ชันอ่านอย่างเดียว
 src/db/mutations.ts     ฟังก์ชันเขียนอย่างเดียว
 src/lib/totals.ts       ฟังก์ชันบริสุทธิ์คำนวณยอดรวม
-src/lib/money.ts        parseBaht / formatBaht
+src/lib/money.ts        formatBaht
 src/lib/cn.ts           clsx wrapper
 src/lib/ui.ts           map สถานะ → class
 src/lib/schemas/*.ts    valibot schema ต่อโมดูล (ใช้ทั้ง client และ server)
 src/components/ui/*     component ที่ใช้ร่วมทั้งแอป
-app/layout.tsx          nav + metadata + next/font
-app/globals.css         theme token ทั้งหมด
+src/app/layout.tsx          nav + metadata + next/font
+src/app/globals.css         theme token ทั้งหมด
 ```
 
 ### Server Actions — 2 แบบ
@@ -212,7 +212,7 @@ app/globals.css         theme token ทั้งหมด
 Server component render ซ้ำได้หลายครั้ง ถ้ามี write หลุดเข้าไปจะรันหลายรอบเงียบๆ กันด้วย 2 ชั้น
 
 1. **แยก module** — `page.tsx` / `layout.tsx` import ได้เฉพาะ `src/db/queries.ts`
-2. **Biome บังคับ** — ตั้ง `noRestrictedImports` ห้าม `app/**/page.tsx` และ `app/**/layout.tsx` import `src/db/mutations` ผิดกฎแล้ว `bun run lint` แดง
+2. **Biome บังคับ** — ตั้ง `noRestrictedImports` ห้าม `src/app/**/page.tsx` และ `src/app/**/layout.tsx` import `src/db/mutations` ผิดกฎแล้ว `bun run lint` แดง
 
 ทุก write อยู่ใน `actions.ts` ที่ขึ้นต้นด้วย `'use server'` เท่านั้น ไม่มีข้อยกเว้น
 
@@ -309,15 +309,11 @@ useForm<v.InferInput<typeof s>, unknown, v.InferOutput<typeof s>>({ resolver: va
 
 ### `src/lib/money.ts` — จุดที่พังแล้วเงียบที่สุด
 
-`parseInt("70,000")` คืน `70` โดยไม่ error ทำให้ยอดรวมทั้งเว็บผิดไปพันเท่าโดยไม่มีอะไรฟ้อง นี่คือ error ประเภทเดียวในระบบนี้ที่ทำให้ตัดสินใจเรื่องเงินผิดได้จริง
+> **แก้ตามคำสั่งเจ้าของงาน 2026-09-02:** ตัดชั้นแปลงสตริงเงินทิ้ง เหลือ `formatBaht` สำหรับแสดงผลอย่างเดียว · ช่องกรอกตัวเลขใช้ helper กลางที่ไม่รู้เรื่องสกุลเงิน (`optionalInteger` / `requiredInteger` / `countOrZero` ใน `src/lib/schemas/shared.ts`) · ผลที่ตามมา: อินพุตเลขไทย/`฿`/คำว่าบาท ไม่ถูกยอมรับอีกต่อไป
 
-**`parseBaht(s: string): number | null`** — เรียกได้จาก **schema เท่านั้น**
-- normalize ก่อน: ตัด comma, `฿`, `บาท`, ช่องว่าง, แปลงเลขไทย ๐–๙ เป็นอาราบิก
-- หลัง normalize ถ้าเหลืออักขระที่ไม่ใช่ตัวเลข → **reject เป็น validation error** ห้ามเดาต่อ
-- ไม่รับค่าติดลบ ไม่รับทศนิยม
-- สตริงว่าง → `null` (ยังไม่ระบุยอด)
+เหตุผลเดิมที่ยังใช้ได้เต็มที่: `parseInt("70,000")` คืน `70` โดยไม่ error ทำให้ยอดรวมทั้งเว็บผิดไปพันเท่าโดยไม่มีอะไรฟ้อง นี่คือ error ประเภทเดียวในระบบนี้ที่ทำให้ตัดสินใจเรื่องเงินผิดได้จริง — helper ตัวเลขกลางที่แทนที่ฟังก์ชันแปลงสตริงเงินตัวเดิมยังกันเคสนี้อยู่ (ตัด comma/ช่องว่างก่อน แล้ว reject ถ้าเหลืออักขระที่ไม่ใช่ตัวเลข) เพียงแต่ไม่ผูกกับสกุลเงินอีกต่อไป และไม่รับเลขไทย/สัญลักษณ์เงินเหมือนเดิม
 
-**`formatBaht(n: number): string`** — เรียกได้จาก **component เท่านั้น**
+**`formatBaht(n: number): string`** — เรียกได้จาก **component เท่านั้น** (ปกติผ่าน `<Money>`) คืนสตริงพร้อมหน่วย เช่น `formatBaht(70000)` → `'70,000 บาท'`
 ```ts
 new Intl.NumberFormat('th-TH', { numberingSystem: 'latn', maximumFractionDigits: 0 })
 ```
@@ -325,9 +321,9 @@ new Intl.NumberFormat('th-TH', { numberingSystem: 'latn', maximumFractionDigits:
 
 ### Error boundary ระดับหน้า
 
-- `app/error.tsx` — จับ error ตอน render (Neon ต่อไม่ติด) แสดง "โหลดข้อมูลไม่ได้" + ปุ่มลองใหม่ที่เรียก `reset()`
-- `app/not-found.tsx` — 404
-- `app/loading.tsx` — spinner (Neon cold start กินเวลาได้ ~1 วินาที)
+- `src/app/error.tsx` — จับ error ตอน render (Neon ต่อไม่ติด) แสดง "โหลดข้อมูลไม่ได้" + ปุ่มลองใหม่ที่เรียก `reset()`
+- `src/app/not-found.tsx` — 404
+- `src/app/loading.tsx` — spinner (Neon cold start กินเวลาได้ ~1 วินาที)
 
 ### `DATABASE_URL` หาย → ล้มทันที
 
@@ -348,9 +344,8 @@ new Intl.NumberFormat('th-TH', { numberingSystem: 'latn', maximumFractionDigits:
 
 ### รายการเทส
 
-**`money.ts` — เขียนก่อนโค้ดจริง**
-- `parseBaht`: `70,000` · `70000฿` · `70 000` · `๗๐๐๐๐` · `abc` (reject) · `-500` (reject) · `70.5` (reject) · `""` → `null`
-- `formatBaht`: `70000` → `"70,000"` และยืนยันว่าไม่มีอักขระเลขไทยหลุดออกมา
+**`money.ts` — เขียนก่อนโค้ดจริง** (แก้ตามคำสั่งเจ้าของงาน 2026-09-02: เหลือเฉพาะ `formatBaht` ตัวเดียว ไม่มีฟังก์ชันแปลงสตริงเงินอีกแล้ว)
+- `formatBaht`: `formatBaht(70000)` → `'70,000 บาท'` · `formatBaht(0)` → `'0 บาท'` และยืนยันว่าไม่มีอักขระเลขไทยหลุดออกมา
 
 **valibot schema ทั้ง 5 โมดูล** — รับอะไร ปฏิเสธอะไร โดยเฉพาะ `null` (ยังไม่รู้ยอด) ต้องไม่ถูกกลืนเป็น `0`
 
@@ -372,7 +367,7 @@ new Intl.NumberFormat('th-TH', { numberingSystem: 'latn', maximumFractionDigits:
 
 ### ชั้นที่ 1 — token ที่เดียว เปลี่ยนทั้งแอป
 
-`app/globals.css` เป็นแหล่งเดียวของสี / ระยะ / ฟอนต์ ไม่มีไฟล์ JS config
+`src/app/globals.css` เป็นแหล่งเดียวของสี / ระยะ / ฟอนต์ ไม่มีไฟล์ JS config
 
 ```css
 @import "tailwindcss";
