@@ -18,7 +18,7 @@
 - **ตัวเลขบนจอต้องเป็นเลขอาราบิกเสมอ** (`numberingSystem: 'latn'`)
 - **ห้ามใช้ `for` / `for...of` / `while`** — ใช้เมธอดของ array (`map` `filter` `reduce` `flatMap` `forEach` `some` `every` `Object.entries` / `Object.fromEntries`) อ่านง่ายมาก่อนสั้น
 - **โค้ดแอปทั้งหมดอยู่ใต้ `src/`** รวมทั้ง `src/app/` ตามที่เอกสาร Next.js กำหนดเรื่อง src folder · `scripts/` `data/` `drizzle/` อยู่ที่ราก
-- **เทสอยู่ข้างไฟล์ที่เทส เสมอ** (`src/lib/money.ts` → `src/lib/money.test.ts`) ไม่มีโฟลเดอร์ `tests/` แยกต่างหาก
+- **เทสอยู่ข้างไฟล์ที่เทส เสมอ** (`src/lib/money.ts` → `src/lib/money.test.ts`) ไม่มีโฟลเดอร์ `tests/` แยกต่างหาก ยกเว้น **`src/db/` ไม่มีเทสเลย**
 - **valibot schema ไม่มีเทส** — เทสครอบเฉพาะฟังก์ชัน (คำสั่งเจ้าของงาน 2026-09-02)
 - **`page.tsx` / `layout.tsx` ห้าม import `@/db/mutations`** และห้ามมี `'use client'` — บังคับด้วย Biome `noRestrictedImports`
 - **ทุก write อยู่ใน `actions.ts` ที่ขึ้นต้นด้วย `'use server'`** เท่านั้น ไม่มีข้อยกเว้น
@@ -45,11 +45,11 @@ src/app/<module>/<module>-form.tsx    'use client': react-hook-form
 src/app/<module>/*-toggle.tsx         'use client': useOptimistic
 
 src/db/schema.ts                  5 ตาราง
-src/db/env.ts / env.test.ts       requireDatabaseUrl (pure, มีเทส)
+src/db/env.ts                     requireDatabaseUrl (pure, ไม่มีเทส — src/db/ ไม่มีเทส)
 src/db/index.ts                   neon client + logger
 src/db/queries.ts                 อ่านอย่างเดียว + await connection()
 src/db/mutations.ts               เขียนอย่างเดียว
-src/db/seed-data.ts / seed-data.test.ts   parse/validate notion-export.json (pure, มีเทส)
+src/db/seed-data.ts               parse/validate notion-export.json (pure, ไม่มีเทส — src/db/ ไม่มีเทส)
 
 src/lib/money.ts / money.test.ts          formatBaht
 src/lib/totals.ts / totals.test.ts        ยอดรวมทั้งหมด (pure)
@@ -354,8 +354,10 @@ git commit -m "feat: add formatBaht with tests"
 
 ### Task 3: Schema · Drizzle client · migration แรก
 
+> **แก้ตามคำสั่งเจ้าของงาน 2026-09-02:** `src/db/` ไม่มีเทสเลย — `requireDatabaseUrl` ไม่มี `env.test.ts` คู่กันแบบไฟล์อื่นใน `src/lib/`
+
 **Files:**
-- Create: `src/db/schema.ts`, `src/db/env.ts`, `src/db/index.ts`, `drizzle.config.ts`, `src/db/env.test.ts`
+- Create: `src/db/schema.ts`, `src/db/env.ts`, `src/db/index.ts`, `drizzle.config.ts`
 - Generate: `drizzle/0000_*.sql`
 
 **Interfaces:**
@@ -366,41 +368,7 @@ git commit -m "feat: add formatBaht with tests"
   - `requireDatabaseUrl(raw: string | undefined): string` จาก `@/db/env`
   - `db` จาก `@/db` (drizzle neon-http instance)
 
-- [ ] **Step 1: เขียนเทสของตัวตรวจ env ให้ fail ก่อน**
-
-`src/db/env.test.ts`:
-```ts
-import { describe, expect, it } from 'bun:test'
-import { requireDatabaseUrl } from '@/db/env'
-
-describe('requireDatabaseUrl', () => {
-  it('คืนค่าเดิมเมื่อรูปแบบถูกต้อง', () => {
-    const url = 'postgresql://user:pw@ep-x.ap-southeast-1.aws.neon.tech/wedding?sslmode=require'
-    expect(requireDatabaseUrl(url)).toBe(url)
-  })
-
-  it('รับ postgres:// ด้วย', () => {
-    expect(requireDatabaseUrl('postgres://u:p@h/db')).toBe('postgres://u:p@h/db')
-  })
-
-  it('ไม่มีค่า → error ที่บอกชื่อตัวแปร', () => {
-    expect(() => requireDatabaseUrl(undefined)).toThrow(/DATABASE_URL/)
-    expect(() => requireDatabaseUrl('')).toThrow(/DATABASE_URL/)
-    expect(() => requireDatabaseUrl('   ')).toThrow(/DATABASE_URL/)
-  })
-
-  it('รูปแบบผิด → error ที่บอกว่าต้องขึ้นต้นด้วยอะไร', () => {
-    expect(() => requireDatabaseUrl('mysql://u:p@h/db')).toThrow(/postgres/)
-  })
-})
-```
-
-- [ ] **Step 2: รันเทสให้เห็นว่า fail**
-
-Run: `bun test src/db/env.test.ts`
-Expected: FAIL — `Cannot find module '@/db/env'`
-
-- [ ] **Step 3: เขียน `src/db/env.ts`**
+- [ ] **Step 1: เขียน `src/db/env.ts`** (ไม่มีเทส — `src/db/` ไม่มีเทส)
 
 ```ts
 export function requireDatabaseUrl(raw: string | undefined): string {
@@ -414,12 +382,7 @@ export function requireDatabaseUrl(raw: string | undefined): string {
 }
 ```
 
-- [ ] **Step 4: รันเทสให้ผ่าน**
-
-Run: `bun test src/db/env.test.ts`
-Expected: PASS
-
-- [ ] **Step 5: เขียน `src/db/schema.ts`**
+- [ ] **Step 2: เขียน `src/db/schema.ts`**
 
 ```ts
 import { boolean, date, integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core'
@@ -502,7 +465,7 @@ export type ChecklistItem = typeof checklistItems.$inferSelect
 export type NewChecklistItem = typeof checklistItems.$inferInsert
 ```
 
-- [ ] **Step 6: เขียน `src/db/index.ts` และ `drizzle.config.ts`**
+- [ ] **Step 3: เขียน `src/db/index.ts` และ `drizzle.config.ts`**
 
 `src/db/index.ts`:
 ```ts
@@ -535,7 +498,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 7: generate migration แล้วอ่าน SQL ที่ได้ด้วยตา**
+- [ ] **Step 4: generate migration แล้วอ่าน SQL ที่ได้ด้วยตา**
 
 ```bash
 bun run db:generate
@@ -543,14 +506,14 @@ cat drizzle/0000_*.sql
 ```
 Expected: `CREATE TABLE` 5 ตาราง · `expenses.amount` ไม่มี `NOT NULL` · `guests.companions_confirmed` ไม่มี `NOT NULL` · มี FK จาก `expenses.vendor_id` และ `checklist_items.vendor_id` ไป `vendors.id`
 
-- [ ] **Step 8: รัน migration จริงกับ Neon**
+- [ ] **Step 5: รัน migration จริงกับ Neon**
 
 ```bash
 bun run db:migrate
 ```
 Expected: สำเร็จ ไม่มี error
 
-- [ ] **Step 9: lint + test ทั้งหมด แล้ว commit**
+- [ ] **Step 6: lint + test ทั้งหมด แล้ว commit**
 
 ```bash
 bun run lint && bun test
@@ -562,8 +525,10 @@ git commit -m "feat: add drizzle schema, neon client and first migration"
 
 ### Task 4: Seed จาก `data/notion-export.json`
 
+> **แก้ตามคำสั่งเจ้าของงาน 2026-09-02:** `src/db/` ไม่มีเทสเลย — `parseSeedFile` / `seedStats` ไม่มี `seed-data.test.ts` คู่กัน
+
 **Files:**
-- Create: `data/notion-export.json`, `src/db/seed-data.ts`, `scripts/seed.ts`, `src/db/seed-data.test.ts`
+- Create: `data/notion-export.json`, `src/db/seed-data.ts`, `scripts/seed.ts`
 
 **Interfaces:**
 - Consumes: `@/db/schema` (ตาราง + type), `@/db` (`db`)
@@ -574,68 +539,7 @@ git commit -m "feat: add drizzle schema, neon client and first migration"
 
 > **ต้องมีก่อนเริ่ม task นี้:** ข้อมูล 35 แถวจาก data source `ค่าใช้จ่ายงานแต่ง (อัตโนมัติ)` ใน Notion — คนสั่งงานต้องส่งลิงก์ data source มาให้ หรือส่งไฟล์ที่ export แล้วมาให้ ห้ามไปค้นหาเองใน workspace
 
-- [ ] **Step 1: เขียนเทสของตัว parse ให้ fail ก่อน**
-
-`src/db/seed-data.test.ts`:
-```ts
-import { describe, expect, it } from 'bun:test'
-import { parseSeedFile, seedStats } from '@/db/seed-data'
-
-const valid = {
-  vendors: [{ id: 1, name: 'APN Organize (คุณปอนด์)', role: 'ออร์แกไนเซอร์', phone: null, line: null, totalPrice: 79000, note: null }],
-  expenses: [
-    { name: 'มัดจำ APN', category: 'ออร์แกไนเซอร์', categorySource: 'notion', amount: 20000, isPaid: true, vendorId: 1, dueDate: null, note: null },
-    { name: 'เครื่องดื่ม', category: 'เครื่องดื่ม', categorySource: 'filled-in', amount: null, isPaid: false, vendorId: null, dueDate: null, note: null },
-  ],
-}
-
-describe('parseSeedFile', () => {
-  it('รับไฟล์ที่ถูกต้อง', () => {
-    const file = parseSeedFile(valid)
-    expect(file.expenses).toHaveLength(2)
-  })
-
-  it('เก็บ amount null ไว้เป็น null ไม่แปลงเป็น 0', () => {
-    const file = parseSeedFile(valid)
-    expect(file.expenses[1]?.amount).toBeNull()
-  })
-
-  it('ปฏิเสธ amount ที่เป็นสตริง', () => {
-    expect(() => parseSeedFile({ ...valid, expenses: [{ ...valid.expenses[0], amount: '20,000' }] })).toThrow()
-  })
-
-  it('ปฏิเสธ amount ที่มีทศนิยมหรือติดลบ', () => {
-    expect(() => parseSeedFile({ ...valid, expenses: [{ ...valid.expenses[0], amount: 20000.5 }] })).toThrow()
-    expect(() => parseSeedFile({ ...valid, expenses: [{ ...valid.expenses[0], amount: -1 }] })).toThrow()
-  })
-
-  it('ปฏิเสธ vendorId ที่ไม่มีใน vendors', () => {
-    expect(() => parseSeedFile({ ...valid, expenses: [{ ...valid.expenses[0], vendorId: 99 }] })).toThrow(/vendorId/)
-  })
-
-  it('ปฏิเสธ categorySource ที่ไม่ใช่ notion หรือ filled-in', () => {
-    expect(() => parseSeedFile({ ...valid, expenses: [{ ...valid.expenses[0], categorySource: 'guess' }] })).toThrow()
-  })
-
-  it('ปฏิเสธ vendor id ซ้ำ', () => {
-    expect(() => parseSeedFile({ ...valid, vendors: [valid.vendors[0], valid.vendors[0]] })).toThrow(/ซ้ำ/)
-  })
-})
-
-describe('seedStats', () => {
-  it('นับรายการที่ยังไม่ระบุยอดและหมวดที่เติมเอง', () => {
-    const stats = seedStats(parseSeedFile(valid))
-    expect(stats).toEqual({ vendorCount: 1, expenseCount: 2, unknownAmountCount: 1, filledCategoryCount: 1 })
-  })
-})
-```
-
-- [ ] **Step 2: รันเทสให้เห็นว่า fail**
-
-Run: `bun test src/db/seed-data.test.ts`
-Expected: FAIL — `Cannot find module '@/db/seed-data'`
-
-- [ ] **Step 3: เขียน `src/db/seed-data.ts`**
+- [ ] **Step 1: เขียน `src/db/seed-data.ts`** (ไม่มีเทส — `src/db/` ไม่มีเทส)
 
 ```ts
 import * as v from 'valibot'
@@ -704,12 +608,7 @@ export function seedStats(file: SeedFile) {
 }
 ```
 
-- [ ] **Step 4: รันเทสให้ผ่าน**
-
-Run: `bun test src/db/seed-data.test.ts`
-Expected: PASS
-
-- [ ] **Step 5: สร้าง `data/notion-export.json` จากข้อมูล 35 แถว**
+- [ ] **Step 2: สร้าง `data/notion-export.json` จากข้อมูล 35 แถว**
 
 กติกาการกรอก (ตามสเปคข้อ 7):
 - vendor id **1–8** ตามตารางในสเปค — 1 APN Organize (คุณปอนด์) · 2 สโมสรร่วมเริงไชย · 3 ช่างภาพวันงาน · 4 ช่างแต่งหน้าวันงาน · 5 โต๊ะจีน · 6 ร้านของชำร่วย · 7 วงดนตรี · 8 ร้านชุด (แถวเปล่า ไม่ผูก expense ให้)
@@ -735,7 +634,7 @@ Expected: PASS
 }
 ```
 
-- [ ] **Step 6: เขียน `scripts/seed.ts`**
+- [ ] **Step 3: เขียน `scripts/seed.ts`**
 
 ```ts
 import { sql } from 'drizzle-orm'
@@ -803,14 +702,14 @@ await db.execute(
 console.log(`seed สำเร็จ: vendor ${stats.vendorCount} แถว · expense ${stats.expenseCount} แถว`)
 ```
 
-- [ ] **Step 7: dry-run แล้วตรวจข้อมูลด้วยตา**
+- [ ] **Step 4: dry-run แล้วตรวจข้อมูลด้วยตา**
 
 ```bash
 bun run db:seed --dry-run
 ```
 Expected: พิมพ์ 8 vendor + 35 expense · บรรทัดสรุปบอก "ยังไม่ระบุยอด: 8 รายการ · หมวดที่เติมเอง: 25 รายการ" ถ้าตัวเลขไม่ตรง ให้กลับไปแก้ JSON ก่อน
 
-- [ ] **Step 8: seed จริงแล้วนับแถว**
+- [ ] **Step 5: seed จริงแล้วนับแถว**
 
 ```bash
 bun run db:seed
@@ -818,18 +717,18 @@ bun run db:seed --dry-run   # ต้องยังทำงานได้ ไ�
 ```
 Expected: บรรทัด "seed สำเร็จ: vendor 8 แถว · expense 35 แถว"
 
-- [ ] **Step 9: ยืนยันว่า seed ซ้ำถูกปฏิเสธ**
+- [ ] **Step 6: ยืนยันว่า seed ซ้ำถูกปฏิเสธ**
 
 ```bash
 bun run db:seed
 ```
 Expected: exit code 1 พร้อมข้อความ "ตารางมีข้อมูลอยู่แล้ว — ถ้าตั้งใจจะ seed ทับให้ใส่ --force"
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 bun run lint && bun test
-git add data/notion-export.json src/db/seed-data.ts scripts/seed.ts src/db/seed-data.test.ts
+git add data/notion-export.json src/db/seed-data.ts scripts/seed.ts
 git commit -m "feat: import 35 expense rows and 8 vendors from notion export"
 ```
 
