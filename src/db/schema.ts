@@ -1,0 +1,78 @@
+import { boolean, date, integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core'
+
+export type Side = 'groom' | 'bride'
+export type Rsvp = 'pending' | 'yes' | 'no'
+export type ChecklistStatus = 'not_started' | 'in_progress' | 'done'
+
+export const vendors = pgTable('vendors', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  role: text('role'),
+  phone: text('phone'),
+  line: text('line'),
+  totalPrice: integer('total_price'),
+  note: text('note'),
+})
+
+export const expenses = pgTable('expenses', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  category: text('category'),
+  /** บาทเต็ม — null = ยังไม่รู้ยอด ห้ามแปลงเป็น 0 */
+  amount: integer('amount'),
+  isPaid: boolean('is_paid').notNull().default(false),
+  vendorId: integer('vendor_id').references(() => vendors.id),
+  dueDate: date('due_date'),
+  note: text('note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const envelopes = pgTable('envelopes', {
+  id: serial('id').primaryKey(),
+  /** null ได้ — วันงานต้องกรอกเร็ว บางซองไม่รู้ชื่อ */
+  giverName: text('giver_name'),
+  amount: integer('amount').notNull(),
+  receivedAt: date('received_at').notNull(),
+  note: text('note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const guests = pgTable('guests', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  side: text('side').$type<Side>().notNull(),
+  /** คอลัมน์ชื่อ guest_group เพราะ group เป็นคำสงวนของ SQL */
+  group: text('guest_group'),
+  companionsEstimated: integer('companions_estimated').notNull().default(0),
+  /** null = ยังไม่ได้ถาม ต่างจาก 0 = ถามแล้ว มาคนเดียว */
+  companionsConfirmed: integer('companions_confirmed'),
+  rsvp: text('rsvp').$type<Rsvp>().notNull().default('pending'),
+  note: text('note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const checklistItems = pgTable('checklist_items', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  category: text('category'),
+  status: text('status').$type<ChecklistStatus>().notNull().default('not_started'),
+  /** "เงินที่ตั้งไว้" — ไม่ถูกนำไปบวกที่ใดทั้งสิ้น ยอดรวมนับจาก expenses เท่านั้น */
+  budget: integer('budget'),
+  deadline: date('deadline'),
+  depositPaid: boolean('deposit_paid').notNull().default(false),
+  vendorId: integer('vendor_id').references(() => vendors.id),
+  note: text('note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type Vendor = typeof vendors.$inferSelect
+export type NewVendor = typeof vendors.$inferInsert
+export type Expense = typeof expenses.$inferSelect
+export type NewExpense = typeof expenses.$inferInsert
+export type Envelope = typeof envelopes.$inferSelect
+export type NewEnvelope = typeof envelopes.$inferInsert
+export type Guest = typeof guests.$inferSelect
+export type NewGuest = typeof guests.$inferInsert
+export type ChecklistItem = typeof checklistItems.$inferSelect
+export type NewChecklistItem = typeof checklistItems.$inferInsert
