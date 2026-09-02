@@ -17,7 +17,7 @@ describe('parseBaht', () => {
 
   it('ตัดช่องว่างรวมถึง non-breaking space', () => {
     expect(parseBaht('70 000')).toBe(70000)
-    expect(parseBaht('70 000')).toBe(70000)
+    expect(parseBaht('70 000')).toBe(70000)
   })
 
   it('แปลงเลขไทยเป็นอาราบิก', () => {
@@ -37,6 +37,12 @@ describe('parseBaht', () => {
     expect(() => parseBaht('abc')).toThrow()
     expect(() => parseBaht('70k')).toThrow()
     expect(() => parseBaht('ประมาณ 70000')).toThrow()
+  })
+
+  it('ปฏิเสธสัญลักษณ์บาทเพียงอย่างเดียว', () => {
+    expect(() => parseBaht('฿')).toThrow()
+    expect(() => parseBaht(',')).toThrow()
+    expect(() => parseBaht('บาท')).toThrow()
   })
 
   it('ปฏิเสธค่าติดลบและทศนิยม', () => {
