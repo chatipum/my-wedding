@@ -7,11 +7,12 @@ export type ActionResult =
 export function toActionResult(error: unknown): ActionResult {
   if (v.isValiError(error)) {
     const flat = v.flatten(error.issues)
-    const fieldErrors: Record<string, string> = {}
-    for (const [field, messages] of Object.entries(flat.nested ?? {})) {
-      const first = messages?.[0]
-      if (first) fieldErrors[field] = first
-    }
+    const fieldErrors = Object.fromEntries(
+      Object.entries(flat.nested ?? {}).flatMap(([field, messages]) => {
+        const first = messages?.[0]
+        return first ? [[field, first] as const] : []
+      }),
+    )
     return { ok: false, message: 'ข้อมูลที่กรอกยังไม่ถูกต้อง', fieldErrors }
   }
 

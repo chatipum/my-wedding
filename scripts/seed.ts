@@ -17,16 +17,16 @@ console.log(
 )
 
 if (dryRun) {
-  for (const vendor of file.vendors) {
+  file.vendors.forEach((vendor) => {
     console.log(`[vendor ${vendor.id}] ${vendor.name}`)
-  }
-  for (const expense of file.expenses) {
+  })
+  file.expenses.forEach((expense) => {
     const amount = expense.amount === null ? 'ยังไม่ระบุ' : expense.amount.toLocaleString('en-US')
     const paid = expense.isPaid ? 'จ่ายแล้ว' : 'ค้างจ่าย'
     console.log(
       `[expense] ${expense.name} · ${expense.category ?? 'ไม่ระบุหมวด'} · ${amount} · ${paid} · vendor ${expense.vendorId ?? '-'}`,
     )
-  }
+  })
   console.log('\n--dry-run: ไม่ได้เขียนอะไรลง DB')
   process.exit(0)
 }

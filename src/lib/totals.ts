@@ -6,18 +6,19 @@ export type AmountRow = { amount: number | null; isPaid: boolean }
 export type MoneySummary = { paid: number; unpaid: number; unknownCount: number }
 
 export function summarizeExpenses(rows: AmountRow[]): MoneySummary {
-  let paid = 0
-  let unpaid = 0
-  let unknownCount = 0
-
-  for (const row of rows) {
-    // null = ยังไม่รู้ยอด ห้ามนับเป็น 0 เพราะทำให้ตัวเลขค้างจ่ายต่ำกว่าความจริงเงียบๆ
-    if (row.amount === null) unknownCount += 1
-    else if (row.isPaid) paid += row.amount
-    else unpaid += row.amount
-  }
-
-  return { paid, unpaid, unknownCount }
+  return rows.reduce<MoneySummary>(
+    (acc, row) => {
+      // null = ยังไม่รู้ยอด ห้ามนับเป็น 0 เพราะทำให้ตัวเลขค้างจ่ายต่ำกว่าความจริงเงียบๆ
+      if (row.amount === null) {
+        return { paid: acc.paid, unpaid: acc.unpaid, unknownCount: acc.unknownCount + 1 }
+      }
+      if (row.isPaid) {
+        return { paid: acc.paid + row.amount, unpaid: acc.unpaid, unknownCount: acc.unknownCount }
+      }
+      return { paid: acc.paid, unpaid: acc.unpaid + row.amount, unknownCount: acc.unknownCount }
+    },
+    { paid: 0, unpaid: 0, unknownCount: 0 },
+  )
 }
 
 export type CategoryRow = AmountRow & { category: string | null }
@@ -26,12 +27,10 @@ export type CategorySummary = MoneySummary & { category: string; total: number; 
 export function summarizeByCategory(rows: CategoryRow[]): CategorySummary[] {
   const buckets = new Map<string, CategoryRow[]>()
 
-  for (const row of rows) {
+  rows.forEach((row) => {
     const key = row.category?.trim() || NO_CATEGORY
-    const bucket = buckets.get(key)
-    if (bucket) bucket.push(row)
-    else buckets.set(key, [row])
-  }
+    buckets.set(key, [...(buckets.get(key) ?? []), row])
+  })
 
   return [...buckets.entries()]
     .map(([category, bucketRows]) => {
@@ -74,25 +73,29 @@ export type GuestCounts = {
 }
 
 export function countGuests(rows: GuestRow[]): GuestCounts {
-  let estimated = 0
-  let confirmed = 0
-  let declined = 0
-  let pending = 0
+  return rows.reduce<GuestCounts>(
+    (acc, row) => {
+      if (row.rsvp === 'no') {
+        return {
+          estimated: acc.estimated,
+          confirmed: acc.confirmed,
+          declined: acc.declined + 1,
+          pending: acc.pending,
+        }
+      }
 
-  for (const row of rows) {
-    if (row.rsvp === 'no') {
-      declined += 1
-      continue
-    }
-    if (row.rsvp === 'pending') pending += 1
-    estimated += 1 + row.companionsEstimated
-    if (row.rsvp === 'yes') {
+      const pending = row.rsvp === 'pending' ? acc.pending + 1 : acc.pending
+      const estimated = acc.estimated + 1 + row.companionsEstimated
       // null = ยังไม่ได้ถามผู้ติดตาม จึงยังต้องใช้ตัวเลขที่คาดไว้
-      confirmed += 1 + (row.companionsConfirmed ?? row.companionsEstimated)
-    }
-  }
+      const confirmed =
+        row.rsvp === 'yes'
+          ? acc.confirmed + 1 + (row.companionsConfirmed ?? row.companionsEstimated)
+          : acc.confirmed
 
-  return { estimated, confirmed, declined, pending }
+      return { estimated, confirmed, declined: acc.declined, pending }
+    },
+    { estimated: 0, confirmed: 0, declined: 0, pending: 0 },
+  )
 }
 
 export type VendorExpenseRow = AmountRow & { vendorId: number | null }
@@ -101,23 +104,21 @@ export type VendorSummary = MoneySummary & { total: number; count: number }
 export function summarizeByVendor(rows: VendorExpenseRow[]): Map<number, VendorSummary> {
   const buckets = new Map<number, VendorExpenseRow[]>()
 
-  for (const row of rows) {
-    if (row.vendorId === null) continue
-    const bucket = buckets.get(row.vendorId)
-    if (bucket) bucket.push(row)
-    else buckets.set(row.vendorId, [row])
-  }
-
-  const result = new Map<number, VendorSummary>()
-  for (const [vendorId, bucketRows] of buckets) {
-    const summary = summarizeExpenses(bucketRows)
-    result.set(vendorId, {
-      ...summary,
-      total: summary.paid + summary.unpaid,
-      count: bucketRows.length,
+  rows
+    .filter((row): row is VendorExpenseRow & { vendorId: number } => row.vendorId !== null)
+    .forEach((row) => {
+      buckets.set(row.vendorId, [...(buckets.get(row.vendorId) ?? []), row])
     })
-  }
-  return result
+
+  return new Map(
+    [...buckets.entries()].map(([vendorId, bucketRows]): [number, VendorSummary] => {
+      const summary = summarizeExpenses(bucketRows)
+      return [
+        vendorId,
+        { ...summary, total: summary.paid + summary.unpaid, count: bucketRows.length },
+      ]
+    }),
+  )
 }
 
 export type DeadlineRow = {

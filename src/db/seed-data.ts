@@ -36,18 +36,19 @@ export type SeedFile = v.InferOutput<typeof seedFileSchema>
 export function parseSeedFile(raw: unknown): SeedFile {
   const file = v.parse(seedFileSchema, raw)
 
-  const ids = new Set<number>()
-  for (const vendor of file.vendors) {
-    if (ids.has(vendor.id)) throw new Error(`vendor id ซ้ำ: ${vendor.id}`)
-    ids.add(vendor.id)
-  }
+  const ids = file.vendors.reduce((seen, vendor) => {
+    if (seen.has(vendor.id)) throw new Error(`vendor id ซ้ำ: ${vendor.id}`)
+    return seen.add(vendor.id)
+  }, new Set<number>())
 
-  for (const expense of file.expenses) {
-    if (expense.vendorId !== null && !ids.has(expense.vendorId)) {
-      throw new Error(
-        `vendorId ${expense.vendorId} ของรายการ "${expense.name}" ไม่มีอยู่ในรายชื่อ vendor`,
-      )
-    }
+  const unknownVendorExpenses = file.expenses.filter(
+    (expense) => expense.vendorId !== null && !ids.has(expense.vendorId),
+  )
+  const firstUnknown = unknownVendorExpenses[0]
+  if (firstUnknown) {
+    throw new Error(
+      `vendorId ${firstUnknown.vendorId} ของรายการ "${firstUnknown.name}" ไม่มีอยู่ในรายชื่อ vendor`,
+    )
   }
 
   return file
