@@ -18,8 +18,7 @@
 - **ตัวเลขบนจอต้องเป็นเลขอาราบิกเสมอ** (`numberingSystem: 'latn'`)
 - **ห้ามใช้ `for` / `for...of` / `while`** — ใช้เมธอดของ array (`map` `filter` `reduce` `flatMap` `forEach` `some` `every` `Object.entries` / `Object.fromEntries`) อ่านง่ายมาก่อนสั้น
 - **โค้ดแอปทั้งหมดอยู่ใต้ `src/`** รวมทั้ง `src/app/` ตามที่เอกสาร Next.js กำหนดเรื่อง src folder · `scripts/` `data/` `drizzle/` อยู่ที่ราก
-- **เทสอยู่ข้างไฟล์ที่เทส เสมอ** (`src/lib/money.ts` → `src/lib/money.test.ts`) ไม่มีโฟลเดอร์ `tests/` แยกต่างหาก ยกเว้น **`src/db/` ไม่มีเทสเลย**
-- **valibot schema ไม่มีเทส** — เทสครอบเฉพาะฟังก์ชัน (คำสั่งเจ้าของงาน 2026-09-02)
+- **เทสครอบเฉพาะฟังก์ชันบริสุทธิ์ใต้ `src/lib/`** เท่านั้น อยู่ข้างไฟล์ที่เทสเสมอ (`src/lib/money.ts` → `src/lib/money.test.ts`) ไม่มีโฟลเดอร์ `tests/` แยก — valibot schema, `src/db/`, และ component ไม่มีเทสเลย (คำสั่งเจ้าของงาน 2026-09-02)
 - **`page.tsx` / `layout.tsx` ห้าม import `@/db/mutations`** และห้ามมี `'use client'` — บังคับด้วย Biome `noRestrictedImports`
 - **ทุก write อยู่ใน `actions.ts` ที่ขึ้นต้นด้วย `'use server'`** เท่านั้น ไม่มีข้อยกเว้น
 - **Server action ไม่ throw** คืน `{ ok: true } | { ok: false, message, detail?, fieldErrors? }` เสมอ
@@ -61,11 +60,10 @@ src/lib/schemas/{expense,envelope,guest,checklist,vendor}.ts   ไม่มี�
 
 src/components/ui/*.tsx           Card Button Field Money Badge DataTable
                                   PageHeader ConfirmButton EmptyState Spinner
-src/components/ui/money.test.tsx / badge.test.tsx   เทสของ Money / Badge
 
 data/notion-export.json           ข้อมูล seed (commit ลง repo)
 scripts/seed.ts                   bun run db:seed [--dry-run] [--force]
-src/**/*.test.ts                  เทสอยู่ข้างไฟล์เสมอ (`*.test.ts` / `*.test.tsx` ในโฟลเดอร์เดียวกับ source) — ไม่มี `tests/` แยก
+src/lib/*.test.ts                 เทสอยู่ข้างไฟล์เสมอ ในโฟลเดอร์เดียวกับ source — ไม่มี `tests/` แยก, มีเทสเฉพาะใต้ src/lib/ เท่านั้น
 drizzle/                          migration ที่ drizzle-kit generate ให้
 ```
 
@@ -1387,7 +1385,7 @@ git commit -m "feat: add valibot schemas and ActionResult contract"
 
 **Files:**
 - Modify: `src/app/globals.css`
-- Create: `src/lib/ui.ts`, `src/components/ui/{card,button,field,money,badge,data-table,page-header,confirm-button,empty-state,spinner}.tsx`, `src/components/ui/money.test.tsx`, `src/components/ui/badge.test.tsx`
+- Create: `src/lib/ui.ts`, `src/components/ui/{card,button,field,money,badge,data-table,page-header,confirm-button,empty-state,spinner}.tsx`
 
 **Interfaces:**
 - Consumes: `cn` จาก `@/lib/cn`, `formatBaht` จาก `@/lib/money`
@@ -1395,60 +1393,7 @@ git commit -m "feat: add valibot schemas and ActionResult contract"
   - `<Card>` `<Button variant>` `<Field>` `<Money value={number|null}>` `<Badge status children>` `<DataTable>` `<PageHeader>` `<ConfirmButton>` `<EmptyState>` `<Spinner>`
   - `STATUS_STYLE` และ `paidStatus(amount, isPaid)` `rsvpStatus(rsvp)` `checklistStatus(status)` จาก `@/lib/ui`
 
-- [ ] **Step 1: เขียนเทสของ `<Money>` และ `<Badge>` ให้ fail ก่อน**
-
-`src/components/ui/money.test.tsx`:
-```tsx
-import { describe, expect, it } from 'bun:test'
-import { renderToStaticMarkup } from 'react-dom/server'
-import { Money } from '@/components/ui/money'
-
-describe('<Money>', () => {
-  it('แสดงเป็น <data> ที่ถือทั้งค่าดิบและค่าที่แสดง', () => {
-    const html = renderToStaticMarkup(<Money value={70000} />)
-    expect(html).toContain('value="70000"')
-    expect(html).toContain('70,000')
-    // formatBaht ต่อหน่วยท้ายเสมอ (แก้ตามคำสั่งเจ้าของงาน 2026-09-02)
-    expect(html).toContain('บาท')
-  })
-
-  it('ไม่มีเลขไทยหลุดออกมา', () => {
-    expect(renderToStaticMarkup(<Money value={70000} />)).not.toMatch(/[๐-๙]/)
-  })
-
-  it('null คือ "ยังไม่ระบุ" ไม่ใช่ 0', () => {
-    const html = renderToStaticMarkup(<Money value={null} />)
-    expect(html).toContain('ยังไม่ระบุ')
-    expect(html).not.toContain('>0<')
-  })
-})
-```
-
-`src/components/ui/badge.test.tsx`:
-```tsx
-import { describe, expect, it } from 'bun:test'
-import { renderToStaticMarkup } from 'react-dom/server'
-import { Badge } from '@/components/ui/badge'
-
-describe('<Badge>', () => {
-  it('มีข้อความเสมอ ไม่ได้สื่อด้วยสีอย่างเดียว', () => {
-    const html = renderToStaticMarkup(<Badge status="paid">จ่ายแล้ว</Badge>)
-    expect(html).toContain('จ่ายแล้ว')
-  })
-
-  it('หยิบคลาสจาก STATUS_STYLE ตามสถานะ', () => {
-    expect(renderToStaticMarkup(<Badge status="unpaid">ค้างจ่าย</Badge>)).toContain('text-unpaid')
-    expect(renderToStaticMarkup(<Badge status="unknown">ยังไม่ระบุ</Badge>)).toContain('text-unknown')
-  })
-})
-```
-
-- [ ] **Step 2: รันเทสให้เห็นว่า fail**
-
-Run: `bun test src/components/ui`
-Expected: FAIL — `Cannot find module '@/components/ui/money'`
-
-- [ ] **Step 3: เขียน `src/app/globals.css` ตัวจริง**
+- [ ] **Step 1: เขียน `src/app/globals.css` ตัวจริง**
 
 ```css
 @import "tailwindcss";
@@ -1507,7 +1452,7 @@ Expected: FAIL — `Cannot find module '@/components/ui/money'`
 }
 ```
 
-- [ ] **Step 4: เขียน `src/lib/ui.ts`**
+- [ ] **Step 2: เขียน `src/lib/ui.ts`**
 
 ```ts
 import type { ChecklistStatus, Rsvp } from '@/db/schema'
@@ -1540,7 +1485,7 @@ export function checklistStatus(status: ChecklistStatus): { key: StatusKey; labe
 export const CHECKLIST_STATUS_ORDER: ChecklistStatus[] = ['in_progress', 'not_started', 'done']
 ```
 
-- [ ] **Step 5: เขียน component ทั้ง 10 ตัว**
+- [ ] **Step 3: เขียน component ทั้ง 10 ตัว**
 
 `src/components/ui/money.tsx`:
 ```tsx
@@ -1746,12 +1691,7 @@ export function Spinner({ label = 'กำลังโหลด' }: { label?: str
 }
 ```
 
-- [ ] **Step 6: รันเทสให้ผ่าน**
-
-Run: `bun test src/components/ui`
-Expected: PASS
-
-- [ ] **Step 7: lint + build แล้ว commit**
+- [ ] **Step 4: lint + build แล้ว commit**
 
 ```bash
 bun run lint && bun test && bun run build
