@@ -397,8 +397,11 @@ function normalize(input: string): string {
 
 /** เรียกได้จาก valibot schema เท่านั้น — สตริงว่าง = ยังไม่ระบุยอด (null) */
 export function parseBaht(input: string): number | null {
+  // เช็คว่าง "จากอินพุตดิบ" ไม่ใช่หลัง normalize — ไม่งั้น '฿' หรือ ',' เดี่ยวๆ จะกลายเป็น null
+  // ทั้งที่มันคืออินพุตผิดรูป ต้อง throw
+  const trimmed = input.trim()
+  if (trimmed === '') return null
   const s = normalize(input)
-  if (s === '') return null
   if (!/^\d+$/.test(s)) throw new InvalidBahtError(input)
   const n = Number(s)
   if (!Number.isSafeInteger(n)) throw new InvalidBahtError(input)
