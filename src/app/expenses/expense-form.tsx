@@ -12,7 +12,6 @@ import { expenseInputSchema } from '@/lib/schemas/expense'
 import { createExpenseAction } from './actions'
 
 type FormInput = v.InferInput<typeof expenseInputSchema>
-type FormOutput = v.InferOutput<typeof expenseInputSchema>
 
 const EMPTY: FormInput = {
   name: '',
@@ -27,15 +26,16 @@ const EMPTY: FormInput = {
 export function ExpenseForm({ vendorOptions }: { vendorOptions: VendorOption[] }) {
   const [serverError, setServerError] = useState<{ message: string; detail?: string } | null>(null)
 
-  // schema เป็น transform (string เข้า → number ออก) จึงต้องประกาศ generic ให้ครบ 3 ตัว
+  // raw: true — resolver ยังใช้ schema เดิม validate ฝั่ง client แต่ส่งค่าดิบ (string) ไป server
+  // เพื่อให้ server v.parse ด้วย schema ตัวเดียวกันได้จริง ไม่ใช่ค่าที่ transform ไปแล้ว
   const {
     register,
     handleSubmit,
     reset,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<FormInput, unknown, FormOutput>({
-    resolver: valibotResolver(expenseInputSchema),
+  } = useForm<FormInput>({
+    resolver: valibotResolver(expenseInputSchema, undefined, { raw: true }),
     defaultValues: EMPTY,
   })
 
