@@ -17,7 +17,9 @@
 - **เงิน format ตอนแสดงผลเท่านั้น** ผ่าน `<Money>` → `formatBaht(n)` คืน `'70,000 บาท'` · ไม่มีชั้นแปลงสตริงเงินอีกแล้ว ช่องกรอกตัวเลขทุกช่องใช้ helper กลาง (`optionalInteger` / `requiredInteger` / `countOrZero`) ซึ่งไม่รู้เรื่องสกุลเงิน
 - **ตัวเลขบนจอต้องเป็นเลขอาราบิกเสมอ** (`numberingSystem: 'latn'`)
 - **ห้ามใช้ `for` / `for...of` / `while`** — ใช้เมธอดของ array (`map` `filter` `reduce` `flatMap` `forEach` `some` `every` `Object.entries` / `Object.fromEntries`) อ่านง่ายมาก่อนสั้น
-- **โค้ดแอปทั้งหมดอยู่ใต้ `src/`** รวมทั้ง `src/app/` ตามที่เอกสาร Next.js กำหนดเรื่อง src folder · `tests/` `scripts/` `data/` `drizzle/` อยู่ที่ราก
+- **โค้ดแอปทั้งหมดอยู่ใต้ `src/`** รวมทั้ง `src/app/` ตามที่เอกสาร Next.js กำหนดเรื่อง src folder · `scripts/` `data/` `drizzle/` อยู่ที่ราก
+- **เทสอยู่ข้างไฟล์ที่เทส เสมอ** (`src/lib/money.ts` → `src/lib/money.test.ts`) ไม่มีโฟลเดอร์ `tests/` แยกต่างหาก
+- **valibot schema ไม่มีเทส** — เทสครอบเฉพาะฟังก์ชัน (คำสั่งเจ้าของงาน 2026-09-02)
 - **`page.tsx` / `layout.tsx` ห้าม import `@/db/mutations`** และห้ามมี `'use client'` — บังคับด้วย Biome `noRestrictedImports`
 - **ทุก write อยู่ใน `actions.ts` ที่ขึ้นต้นด้วย `'use server'`** เท่านั้น ไม่มีข้อยกเว้น
 - **Server action ไม่ throw** คืน `{ ok: true } | { ok: false, message, detail?, fieldErrors? }` เสมอ
@@ -43,25 +45,27 @@ src/app/<module>/<module>-form.tsx    'use client': react-hook-form
 src/app/<module>/*-toggle.tsx         'use client': useOptimistic
 
 src/db/schema.ts                  5 ตาราง
-src/db/env.ts                     requireDatabaseUrl (pure, มีเทส)
+src/db/env.ts / env.test.ts       requireDatabaseUrl (pure, มีเทส)
 src/db/index.ts                   neon client + logger
 src/db/queries.ts                 อ่านอย่างเดียว + await connection()
 src/db/mutations.ts               เขียนอย่างเดียว
-src/db/seed-data.ts               parse/validate notion-export.json (pure, มีเทส)
+src/db/seed-data.ts / seed-data.test.ts   parse/validate notion-export.json (pure, มีเทส)
 
-src/lib/money.ts                  formatBaht
-src/lib/totals.ts                 ยอดรวมทั้งหมด (pure)
-src/lib/action-result.ts          ActionResult + toActionResult
+src/lib/money.ts / money.test.ts          formatBaht
+src/lib/totals.ts / totals.test.ts        ยอดรวมทั้งหมด (pure)
+src/lib/action-result.ts / action-result.test.ts   ActionResult + toActionResult
+src/lib/date.ts / date.test.ts    formatThaiDate
 src/lib/cn.ts                     clsx wrapper
 src/lib/ui.ts                     map สถานะ → class
-src/lib/schemas/{expense,envelope,guest,checklist,vendor}.ts
+src/lib/schemas/{expense,envelope,guest,checklist,vendor}.ts   ไม่มีเทส (schema ไม่มีเทส)
 
 src/components/ui/*.tsx           Card Button Field Money Badge DataTable
                                   PageHeader ConfirmButton EmptyState Spinner
+src/components/ui/money.test.tsx / badge.test.tsx   เทสของ Money / Badge
 
 data/notion-export.json           ข้อมูล seed (commit ลง repo)
 scripts/seed.ts                   bun run db:seed [--dry-run] [--force]
-tests/**/*.test.ts                bun test
+                                  เทสอยู่ข้างไฟล์เสมอ (`*.test.ts` / `*.test.tsx` ในโฟลเดอร์เดียวกับ source) — ไม่มี `tests/` แยก
 drizzle/                          migration ที่ drizzle-kit generate ให้
 ```
 
@@ -284,7 +288,7 @@ git commit -m "chore: scaffold next.js + bun + biome + tailwind v4"
 > **แก้ตามคำสั่งเจ้าของงาน 2026-09-02:** ไม่ต้องมี function แปลงสตริงเงินเลยทั้งนั้น เพราะทั้ง app คนใช้รู้อยู่แล้วว่าเป็นบาท เหลือแค่ function ธรรมดาที่เปลี่ยนตัวเลขเป็น display currency (`70000 => '70,000 บาท'`) ช่องกรอกตัวเลขทุกช่องใช้ helper กลางที่ไม่รู้เรื่องสกุลเงินแทน (ดู Task 6)
 
 **Files:**
-- Create: `src/lib/money.ts`, `tests/lib/money.test.ts`
+- Create: `src/lib/money.ts`, `src/lib/money.test.ts`
 
 **Interfaces:**
 - Consumes: ไม่มี
@@ -293,7 +297,7 @@ git commit -m "chore: scaffold next.js + bun + biome + tailwind v4"
 
 - [ ] **Step 1: เขียนเทสให้ fail ก่อน**
 
-`tests/lib/money.test.ts`:
+`src/lib/money.test.ts`:
 ```ts
 import { describe, expect, it } from 'bun:test'
 import { formatBaht } from '@/lib/money'
@@ -316,7 +320,7 @@ describe('formatBaht', () => {
 
 - [ ] **Step 2: รันเทสให้เห็นว่า fail**
 
-Run: `bun test tests/lib/money.test.ts`
+Run: `bun test src/lib/money.test.ts`
 Expected: FAIL — `Cannot find module '@/lib/money'`
 
 - [ ] **Step 3: เขียน implementation**
@@ -336,13 +340,13 @@ export function formatBaht(n: number): string {
 
 - [ ] **Step 4: รันเทสให้ผ่าน**
 
-Run: `bun test tests/lib/money.test.ts`
+Run: `bun test src/lib/money.test.ts`
 Expected: PASS ทุกเคส
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/lib/money.ts tests/lib/money.test.ts
+git add src/lib/money.ts src/lib/money.test.ts
 git commit -m "feat: add formatBaht with tests"
 ```
 
@@ -351,7 +355,7 @@ git commit -m "feat: add formatBaht with tests"
 ### Task 3: Schema · Drizzle client · migration แรก
 
 **Files:**
-- Create: `src/db/schema.ts`, `src/db/env.ts`, `src/db/index.ts`, `drizzle.config.ts`, `tests/db/env.test.ts`
+- Create: `src/db/schema.ts`, `src/db/env.ts`, `src/db/index.ts`, `drizzle.config.ts`, `src/db/env.test.ts`
 - Generate: `drizzle/0000_*.sql`
 
 **Interfaces:**
@@ -364,7 +368,7 @@ git commit -m "feat: add formatBaht with tests"
 
 - [ ] **Step 1: เขียนเทสของตัวตรวจ env ให้ fail ก่อน**
 
-`tests/db/env.test.ts`:
+`src/db/env.test.ts`:
 ```ts
 import { describe, expect, it } from 'bun:test'
 import { requireDatabaseUrl } from '@/db/env'
@@ -393,7 +397,7 @@ describe('requireDatabaseUrl', () => {
 
 - [ ] **Step 2: รันเทสให้เห็นว่า fail**
 
-Run: `bun test tests/db/env.test.ts`
+Run: `bun test src/db/env.test.ts`
 Expected: FAIL — `Cannot find module '@/db/env'`
 
 - [ ] **Step 3: เขียน `src/db/env.ts`**
@@ -412,7 +416,7 @@ export function requireDatabaseUrl(raw: string | undefined): string {
 
 - [ ] **Step 4: รันเทสให้ผ่าน**
 
-Run: `bun test tests/db/env.test.ts`
+Run: `bun test src/db/env.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: เขียน `src/db/schema.ts`**
@@ -559,7 +563,7 @@ git commit -m "feat: add drizzle schema, neon client and first migration"
 ### Task 4: Seed จาก `data/notion-export.json`
 
 **Files:**
-- Create: `data/notion-export.json`, `src/db/seed-data.ts`, `scripts/seed.ts`, `tests/db/seed-data.test.ts`
+- Create: `data/notion-export.json`, `src/db/seed-data.ts`, `scripts/seed.ts`, `src/db/seed-data.test.ts`
 
 **Interfaces:**
 - Consumes: `@/db/schema` (ตาราง + type), `@/db` (`db`)
@@ -572,7 +576,7 @@ git commit -m "feat: add drizzle schema, neon client and first migration"
 
 - [ ] **Step 1: เขียนเทสของตัว parse ให้ fail ก่อน**
 
-`tests/db/seed-data.test.ts`:
+`src/db/seed-data.test.ts`:
 ```ts
 import { describe, expect, it } from 'bun:test'
 import { parseSeedFile, seedStats } from '@/db/seed-data'
@@ -628,7 +632,7 @@ describe('seedStats', () => {
 
 - [ ] **Step 2: รันเทสให้เห็นว่า fail**
 
-Run: `bun test tests/db/seed-data.test.ts`
+Run: `bun test src/db/seed-data.test.ts`
 Expected: FAIL — `Cannot find module '@/db/seed-data'`
 
 - [ ] **Step 3: เขียน `src/db/seed-data.ts`**
@@ -702,7 +706,7 @@ export function seedStats(file: SeedFile) {
 
 - [ ] **Step 4: รันเทสให้ผ่าน**
 
-Run: `bun test tests/db/seed-data.test.ts`
+Run: `bun test src/db/seed-data.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: สร้าง `data/notion-export.json` จากข้อมูล 35 แถว**
@@ -825,7 +829,7 @@ Expected: exit code 1 พร้อมข้อความ "ตารางม�
 
 ```bash
 bun run lint && bun test
-git add data/notion-export.json src/db/seed-data.ts scripts/seed.ts tests/db/seed-data.test.ts
+git add data/notion-export.json src/db/seed-data.ts scripts/seed.ts src/db/seed-data.test.ts
 git commit -m "feat: import 35 expense rows and 8 vendors from notion export"
 ```
 
@@ -834,7 +838,7 @@ git commit -m "feat: import 35 expense rows and 8 vendors from notion export"
 ### Task 5: `src/lib/totals.ts` — ยอดรวมทุกตัวในระบบ
 
 **Files:**
-- Create: `src/lib/totals.ts`, `tests/lib/totals.test.ts`
+- Create: `src/lib/totals.ts`, `src/lib/totals.test.ts`
 
 **Interfaces:**
 - Consumes: type `Rsvp` `ChecklistStatus` จาก `@/db/schema`
@@ -850,7 +854,7 @@ git commit -m "feat: import 35 expense rows and 8 vendors from notion export"
 
 - [ ] **Step 1: เขียนเทสให้ fail ก่อน**
 
-`tests/lib/totals.test.ts`:
+`src/lib/totals.test.ts`:
 ```ts
 import { describe, expect, it } from 'bun:test'
 import {
@@ -1010,7 +1014,7 @@ describe('upcomingDeadlines', () => {
 
 - [ ] **Step 2: รันเทสให้เห็นว่า fail**
 
-Run: `bun test tests/lib/totals.test.ts`
+Run: `bun test src/lib/totals.test.ts`
 Expected: FAIL — `Cannot find module '@/lib/totals'`
 
 - [ ] **Step 3: เขียน `src/lib/totals.ts`**
@@ -1159,13 +1163,13 @@ export function upcomingDeadlines(rows: DeadlineRow[], limit = 5): DeadlineRow[]
 
 - [ ] **Step 4: รันเทสให้ผ่าน**
 
-Run: `bun test tests/lib/totals.test.ts`
+Run: `bun test src/lib/totals.test.ts`
 Expected: PASS ทุกเคส
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/lib/totals.ts tests/lib/totals.test.ts
+git add src/lib/totals.ts src/lib/totals.test.ts
 git commit -m "feat: add pure total functions for money, guests and vendors"
 ```
 
@@ -1173,8 +1177,10 @@ git commit -m "feat: add pure total functions for money, guests and vendors"
 
 ### Task 6: valibot schema ทั้ง 5 โมดูล + `ActionResult`
 
+> **แก้ตามคำสั่งเจ้าของงาน 2026-09-02:** schema ไม่ต้องมีเทส เทสครอบเฉพาะฟังก์ชัน `toActionResult` เท่านั้น — พฤติกรรม parse ของ schema (แปลงสตริงเงิน, `''` → `null`, ปฏิเสธค่าไม่ถูกต้อง ฯลฯ) ถูกใช้เป็น fixture ใน `action-result.test.ts` แต่ไม่ใช่สิ่งที่เทสยืนยันโดยตรง
+
 **Files:**
-- Create: `src/lib/action-result.ts`, `src/lib/schemas/shared.ts`, `src/lib/schemas/expense.ts`, `src/lib/schemas/envelope.ts`, `src/lib/schemas/guest.ts`, `src/lib/schemas/checklist.ts`, `src/lib/schemas/vendor.ts`, `tests/lib/schemas.test.ts`, `tests/lib/action-result.test.ts`
+- Create: `src/lib/action-result.ts`, `src/lib/schemas/shared.ts`, `src/lib/schemas/expense.ts`, `src/lib/schemas/envelope.ts`, `src/lib/schemas/guest.ts`, `src/lib/schemas/checklist.ts`, `src/lib/schemas/vendor.ts`, `src/lib/action-result.test.ts`
 
 **Interfaces:**
 - Consumes: ไม่มี
@@ -1189,148 +1195,9 @@ git commit -m "feat: add pure total functions for money, guests and vendors"
   - `vendorInputSchema` / `vendorUpdateSchema` + `VendorInput` `VendorValues`
   - `idSchema` (`v.object({ id })`) ใช้กับ action ลบ
 
-- [ ] **Step 1: เขียนเทสให้ fail ก่อน**
+- [ ] **Step 1: เขียนเทสให้ fail ก่อน** (เฉพาะ `toActionResult` — schema ไม่มีเทส)
 
-`tests/lib/schemas.test.ts`:
-```ts
-import { describe, expect, it } from 'bun:test'
-import * as v from 'valibot'
-import { checklistInputSchema } from '@/lib/schemas/checklist'
-import { envelopeInputSchema } from '@/lib/schemas/envelope'
-import { expenseInputSchema } from '@/lib/schemas/expense'
-import { guestInputSchema } from '@/lib/schemas/guest'
-import { vendorInputSchema } from '@/lib/schemas/vendor'
-
-const expenseForm = {
-  name: 'จ่ายโต๊ะจีน',
-  category: 'อาหาร',
-  amount: '70,000',
-  isPaid: false,
-  vendorId: '5',
-  dueDate: '',
-  note: '',
-}
-
-describe('expenseInputSchema', () => {
-  it('แปลงสตริงเงินเป็นจำนวนเต็มบาท', () => {
-    expect(v.parse(expenseInputSchema, expenseForm).amount).toBe(70000)
-  })
-
-  it('ช่องเงินว่าง = ยังไม่ระบุยอด (null) ไม่ใช่ 0', () => {
-    expect(v.parse(expenseInputSchema, { ...expenseForm, amount: '' }).amount).toBeNull()
-  })
-
-  it('ช่องข้อความว่างกลายเป็น null และตัดช่องว่างหัวท้าย', () => {
-    const parsed = v.parse(expenseInputSchema, { ...expenseForm, category: '  ', note: '  ok  ' })
-    expect(parsed.category).toBeNull()
-    expect(parsed.note).toBe('ok')
-  })
-
-  it('vendorId ว่างเป็น null มีค่าเป็นตัวเลข', () => {
-    expect(v.parse(expenseInputSchema, { ...expenseForm, vendorId: '' }).vendorId).toBeNull()
-    expect(v.parse(expenseInputSchema, expenseForm).vendorId).toBe(5)
-  })
-
-  it('ปฏิเสธชื่อว่าง', () => {
-    expect(() => v.parse(expenseInputSchema, { ...expenseForm, name: '   ' })).toThrow()
-  })
-
-  it('ปฏิเสธยอดเงินที่พิมพ์มั่ว', () => {
-    expect(() => v.parse(expenseInputSchema, { ...expenseForm, amount: 'ประมาณ 70000' })).toThrow()
-  })
-
-  it('ปฏิเสธวันที่รูปแบบผิด', () => {
-    expect(() => v.parse(expenseInputSchema, { ...expenseForm, dueDate: '28/11/2569' })).toThrow()
-  })
-})
-
-describe('envelopeInputSchema', () => {
-  const form = { giverName: '', amount: '1,000', receivedAt: '2026-11-28', note: '' }
-
-  it('ชื่อผู้ให้ว่างได้ เพราะวันงานต้องกรอกเร็ว', () => {
-    expect(v.parse(envelopeInputSchema, form).giverName).toBeNull()
-  })
-
-  it('ยอดซองต้องมีเสมอ', () => {
-    expect(() => v.parse(envelopeInputSchema, { ...form, amount: '' })).toThrow()
-  })
-
-  it('ยอดซองเป็น 0 ได้', () => {
-    expect(v.parse(envelopeInputSchema, { ...form, amount: '0' }).amount).toBe(0)
-  })
-})
-
-describe('guestInputSchema', () => {
-  const form = {
-    name: 'พี่เอ',
-    side: 'groom',
-    group: 'ที่ทำงาน',
-    companionsEstimated: '2',
-    companionsConfirmed: '',
-    rsvp: 'pending',
-    note: '',
-  }
-
-  it('ผู้ติดตามที่ยืนยันแล้ว: ว่าง = ยังไม่ได้ถาม (null)', () => {
-    expect(v.parse(guestInputSchema, form).companionsConfirmed).toBeNull()
-  })
-
-  it('ผู้ติดตามที่ยืนยันแล้วเป็น 0 ได้ และไม่กลายเป็น null', () => {
-    expect(v.parse(guestInputSchema, { ...form, companionsConfirmed: '0' }).companionsConfirmed).toBe(0)
-  })
-
-  it('ผู้ติดตามที่คาดไว้ว่างเปล่ากลายเป็น 0', () => {
-    expect(v.parse(guestInputSchema, { ...form, companionsEstimated: '' }).companionsEstimated).toBe(0)
-  })
-
-  it('ปฏิเสธจำนวนผู้ติดตามที่ติดลบหรือไม่ใช่ตัวเลข', () => {
-    expect(() => v.parse(guestInputSchema, { ...form, companionsEstimated: '-1' })).toThrow()
-    expect(() => v.parse(guestInputSchema, { ...form, companionsConfirmed: 'สอง' })).toThrow()
-  })
-
-  it('ปฏิเสธ side และ rsvp นอกรายการ', () => {
-    expect(() => v.parse(guestInputSchema, { ...form, side: 'other' })).toThrow()
-    expect(() => v.parse(guestInputSchema, { ...form, rsvp: 'maybe' })).toThrow()
-  })
-})
-
-describe('checklistInputSchema', () => {
-  const form = {
-    name: 'จองช่างภาพ',
-    category: 'ภาพถ่าย',
-    status: 'not_started',
-    budget: '',
-    deadline: '',
-    depositPaid: false,
-    vendorId: '',
-    note: '',
-  }
-
-  it('งบที่ยังไม่ตั้งเป็น null', () => {
-    expect(v.parse(checklistInputSchema, form).budget).toBeNull()
-  })
-
-  it('ปฏิเสธสถานะนอกรายการ', () => {
-    expect(() => v.parse(checklistInputSchema, { ...form, status: 'ทำอยู่' })).toThrow()
-  })
-})
-
-describe('vendorInputSchema', () => {
-  it('เว้นเบอร์และ LINE ว่างได้ ให้เจ้าของงานเติมทีหลัง', () => {
-    const parsed = v.parse(vendorInputSchema, {
-      name: 'ช่างภาพวันงาน',
-      role: '',
-      phone: '',
-      line: '',
-      totalPrice: '',
-      note: '',
-    })
-    expect(parsed).toEqual({ name: 'ช่างภาพวันงาน', role: null, phone: null, line: null, totalPrice: null, note: null })
-  })
-})
-```
-
-`tests/lib/action-result.test.ts`:
+`src/lib/action-result.test.ts`:
 ```ts
 import { describe, expect, it } from 'bun:test'
 import * as v from 'valibot'
@@ -1363,7 +1230,7 @@ describe('toActionResult', () => {
 
 - [ ] **Step 2: รันเทสให้เห็นว่า fail**
 
-Run: `bun test tests/lib/schemas.test.ts tests/lib/action-result.test.ts`
+Run: `bun test src/lib/action-result.test.ts`
 Expected: FAIL — หา module ไม่เจอ
 
 - [ ] **Step 3: เขียน `src/lib/schemas/shared.ts`**
@@ -1438,7 +1305,7 @@ export const optionalDate = v.pipe(
 export const requiredDate = v.pipe(v.string(), v.trim(), v.regex(ISO_DATE, 'ต้องใส่วันที่'))
 ```
 
-- [ ] **Step 4: เขียน schema ของทั้ง 5 โมดูล**
+- [ ] **Step 4: เขียน schema ของทั้ง 5 โมดูล** (ไม่มีเทส — เทสครอบเฉพาะฟังก์ชัน)
 
 `src/lib/schemas/expense.ts`:
 ```ts
@@ -1605,13 +1472,13 @@ export function toActionResult(error: unknown): ActionResult {
 - [ ] **Step 6: รันเทสให้ผ่าน**
 
 Run: `bun test`
-Expected: PASS ทั้งหมด (money · env · seed-data · totals · schemas · action-result)
+Expected: PASS ทั้งหมด (money · env · seed-data · totals · action-result)
 
 - [ ] **Step 7: Commit**
 
 ```bash
 bun run lint
-git add src/lib/schemas src/lib/action-result.ts tests/lib
+git add src/lib/schemas src/lib/action-result.ts src/lib/action-result.test.ts
 git commit -m "feat: add valibot schemas and ActionResult contract"
 ```
 
@@ -1621,7 +1488,7 @@ git commit -m "feat: add valibot schemas and ActionResult contract"
 
 **Files:**
 - Modify: `src/app/globals.css`
-- Create: `src/lib/ui.ts`, `src/components/ui/{card,button,field,money,badge,data-table,page-header,confirm-button,empty-state,spinner}.tsx`, `tests/components/money.test.tsx`, `tests/components/badge.test.tsx`
+- Create: `src/lib/ui.ts`, `src/components/ui/{card,button,field,money,badge,data-table,page-header,confirm-button,empty-state,spinner}.tsx`, `src/components/ui/money.test.tsx`, `src/components/ui/badge.test.tsx`
 
 **Interfaces:**
 - Consumes: `cn` จาก `@/lib/cn`, `formatBaht` จาก `@/lib/money`
@@ -1631,7 +1498,7 @@ git commit -m "feat: add valibot schemas and ActionResult contract"
 
 - [ ] **Step 1: เขียนเทสของ `<Money>` และ `<Badge>` ให้ fail ก่อน**
 
-`tests/components/money.test.tsx`:
+`src/components/ui/money.test.tsx`:
 ```tsx
 import { describe, expect, it } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -1658,7 +1525,7 @@ describe('<Money>', () => {
 })
 ```
 
-`tests/components/badge.test.tsx`:
+`src/components/ui/badge.test.tsx`:
 ```tsx
 import { describe, expect, it } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -1679,7 +1546,7 @@ describe('<Badge>', () => {
 
 - [ ] **Step 2: รันเทสให้เห็นว่า fail**
 
-Run: `bun test tests/components`
+Run: `bun test src/components/ui`
 Expected: FAIL — `Cannot find module '@/components/ui/money'`
 
 - [ ] **Step 3: เขียน `src/app/globals.css` ตัวจริง**
@@ -1982,14 +1849,14 @@ export function Spinner({ label = 'กำลังโหลด' }: { label?: str
 
 - [ ] **Step 6: รันเทสให้ผ่าน**
 
-Run: `bun test tests/components`
+Run: `bun test src/components/ui`
 Expected: PASS
 
 - [ ] **Step 7: lint + build แล้ว commit**
 
 ```bash
 bun run lint && bun test && bun run build
-git add src/app/globals.css src/lib/ui.ts src/components tests/components
+git add src/app/globals.css src/lib/ui.ts src/components
 git commit -m "feat: add theme tokens and shared ui components"
 ```
 
@@ -2141,7 +2008,7 @@ git commit -m "feat: add app shell with nav, thai font and error boundaries"
 ### Task 9: โมดูล `/expenses`
 
 **Files:**
-- Create: `src/lib/date.ts`, `tests/lib/date.test.ts`, `src/components/ui/date-text.tsx`, `src/db/queries.ts`, `src/db/mutations.ts`, `src/app/expenses/page.tsx`, `src/app/expenses/actions.ts`, `src/app/expenses/expense-form.tsx`, `src/app/expenses/paid-toggle.tsx`, `src/app/expenses/delete-expense-button.tsx`
+- Create: `src/lib/date.ts`, `src/lib/date.test.ts`, `src/components/ui/date-text.tsx`, `src/db/queries.ts`, `src/db/mutations.ts`, `src/app/expenses/page.tsx`, `src/app/expenses/actions.ts`, `src/app/expenses/expense-form.tsx`, `src/app/expenses/paid-toggle.tsx`, `src/app/expenses/delete-expense-button.tsx`
 
 **Interfaces:**
 - Consumes: `summarizeExpenses` `summarizeByCategory` จาก `@/lib/totals` · schema จาก `@/lib/schemas/expense` · `toActionResult` `ActionResult` · component จาก `@/components/ui/*`
@@ -2154,7 +2021,7 @@ git commit -m "feat: add app shell with nav, thai font and error boundaries"
 
 - [ ] **Step 1: เขียนเทสของ `formatThaiDate` ให้ fail ก่อน**
 
-`tests/lib/date.test.ts`:
+`src/lib/date.test.ts`:
 ```ts
 import { describe, expect, it } from 'bun:test'
 import { formatThaiDate } from '@/lib/date'
@@ -2173,7 +2040,7 @@ describe('formatThaiDate', () => {
 
 - [ ] **Step 2: รันเทสให้เห็นว่า fail**
 
-Run: `bun test tests/lib/date.test.ts`
+Run: `bun test src/lib/date.test.ts`
 Expected: FAIL — `Cannot find module '@/lib/date'`
 
 - [ ] **Step 3: เขียน `src/lib/date.ts` และ `<DateText>`**
@@ -2210,7 +2077,7 @@ export function DateText({ value }: { value: string | null }) {
 
 - [ ] **Step 4: รันเทสให้ผ่าน**
 
-Run: `bun test tests/lib/date.test.ts`
+Run: `bun test src/lib/date.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: `src/db/queries.ts` — ชั้นอ่านอย่างเดียว**
@@ -2663,7 +2530,7 @@ Expected: PASS (และถ้าลองเพิ่ม `import { createExpen
 
 ```bash
 bun test && bun run build
-git add src/lib/date.ts tests/lib/date.test.ts src/components/ui/date-text.tsx src/db/queries.ts src/db/mutations.ts src/app/expenses
+git add src/lib/date.ts src/lib/date.test.ts src/components/ui/date-text.tsx src/db/queries.ts src/db/mutations.ts src/app/expenses
 git commit -m "feat: add expenses page with form, paid toggle and category summary"
 ```
 
