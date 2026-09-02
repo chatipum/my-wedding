@@ -498,7 +498,7 @@ DATABASE_URL=<Neon connection string>
 2. `money.ts` พร้อมเทส (เขียนเทสก่อน)
 3. `schema.ts` + drizzle config + migration แรก
 4. `data/notion-export.json` + `db:seed` (`--dry-run` ก่อน) → ตรวจข้อมูล → seed จริง
-5. `totals.ts` พร้อมเทส · valibot schemas พร้อมเทส
+5. `totals.ts` พร้อมเทส
 6. `src/components/ui/*` + `globals.css`
 7. โมดูลทีละตัว: expenses → envelopes → dashboard → guests → checklist → vendors
 8. `error.tsx` / `loading.tsx` / `not-found.tsx` / metadata
