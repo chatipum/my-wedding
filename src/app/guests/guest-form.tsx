@@ -7,8 +7,9 @@ import type * as v from 'valibot'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
+import type { Guest } from '@/db/schema'
 import { guestInputSchema } from '@/lib/schemas/guest'
-import { createGuestAction } from './actions'
+import { createGuestAction, updateGuestAction } from './actions'
 
 type FormInput = v.InferInput<typeof guestInputSchema>
 
@@ -22,7 +23,30 @@ const BLANK: FormInput = {
   note: '',
 }
 
-export function GuestForm() {
+export type GuestFormInitial = FormInput & { id: number }
+
+export function toGuestFormValues(guest: Guest): GuestFormInitial {
+  return {
+    id: guest.id,
+    name: guest.name,
+    side: guest.side,
+    group: guest.group ?? '',
+    companionsEstimated: String(guest.companionsEstimated),
+    // null = ยังไม่ได้ถาม จึงต้องกลับไปเป็นช่องว่าง ไม่ใช่ '0'
+    companionsConfirmed:
+      guest.companionsConfirmed === null ? '' : String(guest.companionsConfirmed),
+    rsvp: guest.rsvp,
+    note: guest.note ?? '',
+  }
+}
+
+export function GuestForm({
+  initial,
+  onDone,
+}: {
+  initial?: GuestFormInitial
+  onDone?: () => void
+}) {
   const [serverError, setServerError] = useState<{ message: string; detail?: string } | null>(null)
   const nameRef = useRef<HTMLInputElement | null>(null)
 
@@ -35,18 +59,26 @@ export function GuestForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormInput>({
     resolver: valibotResolver(guestInputSchema, undefined, { raw: true }),
-    defaultValues: BLANK,
+    defaultValues: initial ?? BLANK,
   })
 
   const onSubmit = handleSubmit(async (values) => {
-    const result = await createGuestAction(values)
+    const result = initial
+      ? await updateGuestAction({ id: initial.id, ...values })
+      : await createGuestAction(values)
+
     if (result.ok) {
+      setServerError(null)
+      if (initial) {
+        onDone?.()
+        return
+      }
       // กรอกทีละ ~10 คนติดกัน — ฝั่งกับกลุ่มมักซ้ำเดิม จึงจำค่าล่าสุดไว้
       reset({ ...BLANK, side: getValues('side'), group: getValues('group') })
       nameRef.current?.focus()
-      setServerError(null)
       return
     }
+
     Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
     })
@@ -123,8 +155,13 @@ export function GuestForm() {
 
         <div className="sm:col-span-3 flex items-center gap-3">
           <Button type="submit" disabled={isSubmitting}>
-            เพิ่มแขก
+            {initial ? 'บันทึกการแก้ไข' : 'เพิ่มแขก'}
           </Button>
+          {initial ? (
+            <Button variant="ghost" onClick={() => onDone?.()}>
+              ยกเลิก
+            </Button>
+          ) : null}
           {serverError ? (
             <span className="field-error">
               {serverError.message}

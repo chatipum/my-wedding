@@ -32,12 +32,20 @@ export async function createEnvelope(values: EnvelopeValues): Promise<void> {
   await db.insert(envelopes).values(values)
 }
 
+export async function updateEnvelope(id: number, values: EnvelopeValues): Promise<void> {
+  await db.update(envelopes).set(values).where(eq(envelopes.id, id))
+}
+
 export async function deleteEnvelope(id: number): Promise<void> {
   await db.delete(envelopes).where(eq(envelopes.id, id))
 }
 
 export async function createGuest(values: GuestValues): Promise<void> {
   await db.insert(guests).values(values)
+}
+
+export async function updateGuest(id: number, values: GuestValues): Promise<void> {
+  await db.update(guests).set(values).where(eq(guests.id, id))
 }
 
 export async function setGuestRsvp(id: number, rsvp: Rsvp): Promise<void> {
@@ -50,6 +58,10 @@ export async function deleteGuest(id: number): Promise<void> {
 
 export async function createChecklistItem(values: ChecklistValues): Promise<void> {
   await db.insert(checklistItems).values(values)
+}
+
+export async function updateChecklistItem(id: number, values: ChecklistValues): Promise<void> {
+  await db.update(checklistItems).set(values).where(eq(checklistItems.id, id))
 }
 
 export async function setChecklistStatus(id: number, status: ChecklistStatus): Promise<void> {

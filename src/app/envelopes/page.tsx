@@ -1,13 +1,12 @@
 import { Card } from '@/components/ui/card'
 import { DataTable } from '@/components/ui/data-table'
-import { DateText } from '@/components/ui/date-text'
 import { Money } from '@/components/ui/money'
 import { PageHeader } from '@/components/ui/page-header'
 import { listEnvelopes } from '@/db/queries'
 import { todayIso } from '@/lib/date'
 import { sumEnvelopes } from '@/lib/totals'
-import { DeleteEnvelopeButton } from './delete-envelope-button'
 import { EnvelopeForm } from './envelope-form'
+import { EnvelopeRow } from './envelope-row'
 
 export default async function EnvelopesPage() {
   const rows = await listEnvelopes()
@@ -38,19 +37,7 @@ export default async function EnvelopesPage() {
           emptyMessage="ยังไม่มีซอง"
         >
           {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.giverName ?? 'ไม่ระบุชื่อ'}</td>
-              <td>
-                <DateText value={row.receivedAt} />
-              </td>
-              <td>{row.note ?? '—'}</td>
-              <td className="num">
-                <Money value={row.amount} />
-              </td>
-              <td>
-                <DeleteEnvelopeButton id={row.id} label={row.giverName ?? 'ไม่ระบุชื่อ'} />
-              </td>
-            </tr>
+            <EnvelopeRow key={row.id} row={row} columnCount={5} />
           ))}
         </DataTable>
       </Card>

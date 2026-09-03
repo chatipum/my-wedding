@@ -2,9 +2,18 @@
 
 import { revalidatePath } from 'next/cache'
 import * as v from 'valibot'
-import { createChecklistItem, deleteChecklistItem, setChecklistStatus } from '@/db/mutations'
+import {
+  createChecklistItem,
+  deleteChecklistItem,
+  setChecklistStatus,
+  updateChecklistItem,
+} from '@/db/mutations'
 import { type ActionResult, toActionResult } from '@/lib/action-result'
-import { checklistInputSchema, toggleChecklistStatusSchema } from '@/lib/schemas/checklist'
+import {
+  checklistInputSchema,
+  checklistUpdateSchema,
+  toggleChecklistStatusSchema,
+} from '@/lib/schemas/checklist'
 import { idSchema } from '@/lib/schemas/shared'
 
 function revalidate(): void {
@@ -27,6 +36,17 @@ export async function setChecklistStatusAction(raw: unknown): Promise<ActionResu
   try {
     const { id, status } = v.parse(toggleChecklistStatusSchema, raw)
     await setChecklistStatus(id, status)
+    revalidate()
+    return { ok: true }
+  } catch (error) {
+    return toActionResult(error)
+  }
+}
+
+export async function updateChecklistItemAction(raw: unknown): Promise<ActionResult> {
+  try {
+    const { id, ...values } = v.parse(checklistUpdateSchema, raw)
+    await updateChecklistItem(id, values)
     revalidate()
     return { ok: true }
   } catch (error) {

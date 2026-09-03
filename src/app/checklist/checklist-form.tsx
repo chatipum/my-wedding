@@ -7,9 +7,9 @@ import type * as v from 'valibot'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
-import type { VendorOption } from '@/db/queries'
+import type { ChecklistWithVendor, VendorOption } from '@/db/queries'
 import { checklistInputSchema } from '@/lib/schemas/checklist'
-import { createChecklistItemAction } from './actions'
+import { createChecklistItemAction, updateChecklistItemAction } from './actions'
 
 type FormInput = v.InferInput<typeof checklistInputSchema>
 
@@ -24,7 +24,31 @@ const EMPTY: FormInput = {
   note: '',
 }
 
-export function ChecklistForm({ vendorOptions }: { vendorOptions: VendorOption[] }) {
+export type ChecklistFormInitial = FormInput & { id: number }
+
+export function toChecklistFormValues(row: ChecklistWithVendor): ChecklistFormInitial {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category ?? '',
+    status: row.status,
+    budget: row.budget === null ? '' : String(row.budget),
+    deadline: row.deadline ?? '',
+    depositPaid: row.depositPaid,
+    vendorId: row.vendorId === null ? '' : String(row.vendorId),
+    note: row.note ?? '',
+  }
+}
+
+export function ChecklistForm({
+  vendorOptions,
+  initial,
+  onDone,
+}: {
+  vendorOptions: VendorOption[]
+  initial?: ChecklistFormInitial
+  onDone?: () => void
+}) {
   const [serverError, setServerError] = useState<{ message: string; detail?: string } | null>(null)
 
   const {
@@ -35,16 +59,21 @@ export function ChecklistForm({ vendorOptions }: { vendorOptions: VendorOption[]
     formState: { errors, isSubmitting },
   } = useForm<FormInput>({
     resolver: valibotResolver(checklistInputSchema, undefined, { raw: true }),
-    defaultValues: EMPTY,
+    defaultValues: initial ?? EMPTY,
   })
 
   const onSubmit = handleSubmit(async (values) => {
-    const result = await createChecklistItemAction(values)
+    const result = initial
+      ? await updateChecklistItemAction({ id: initial.id, ...values })
+      : await createChecklistItemAction(values)
+
     if (result.ok) {
-      reset(EMPTY)
       setServerError(null)
+      if (initial) onDone?.()
+      else reset(EMPTY)
       return
     }
+
     Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
     })
@@ -106,8 +135,13 @@ export function ChecklistForm({ vendorOptions }: { vendorOptions: VendorOption[]
 
         <div className="sm:col-span-3 flex items-center gap-3">
           <Button type="submit" disabled={isSubmitting}>
-            เพิ่มงาน
+            {initial ? 'บันทึกการแก้ไข' : 'เพิ่มงาน'}
           </Button>
+          {initial ? (
+            <Button variant="ghost" onClick={() => onDone?.()}>
+              ยกเลิก
+            </Button>
+          ) : null}
           {serverError ? (
             <span className="field-error">
               {serverError.message}

@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import * as v from 'valibot'
-import { createEnvelope, deleteEnvelope } from '@/db/mutations'
+import { createEnvelope, deleteEnvelope, updateEnvelope } from '@/db/mutations'
 import { type ActionResult, toActionResult } from '@/lib/action-result'
-import { envelopeInputSchema } from '@/lib/schemas/envelope'
+import { envelopeInputSchema, envelopeUpdateSchema } from '@/lib/schemas/envelope'
 import { idSchema } from '@/lib/schemas/shared'
 
 function revalidate(): void {
@@ -16,6 +16,17 @@ export async function createEnvelopeAction(raw: unknown): Promise<ActionResult> 
   try {
     const values = v.parse(envelopeInputSchema, raw)
     await createEnvelope(values)
+    revalidate()
+    return { ok: true }
+  } catch (error) {
+    return toActionResult(error)
+  }
+}
+
+export async function updateEnvelopeAction(raw: unknown): Promise<ActionResult> {
+  try {
+    const { id, ...values } = v.parse(envelopeUpdateSchema, raw)
+    await updateEnvelope(id, values)
     revalidate()
     return { ok: true }
   } catch (error) {

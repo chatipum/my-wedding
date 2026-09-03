@@ -1,12 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ConfirmButton } from '@/components/ui/confirm-button'
 import { DataTable } from '@/components/ui/data-table'
 import type { Guest } from '@/db/schema'
 import { countGuests } from '@/lib/totals'
-import { deleteGuestAction } from './actions'
-import { RsvpSelect } from './rsvp-select'
+import { GuestRow } from './guest-row'
 
 const COLUMNS = [
   { key: 'name', label: 'ชื่อ' },
@@ -17,29 +15,6 @@ const COLUMNS = [
   { key: 'rsvp', label: 'ตอบรับ' },
   { key: 'actions', label: '' },
 ]
-
-function DeleteGuestButton({ id, name }: { id: number; name: string }) {
-  const [error, setError] = useState<string | null>(null)
-
-  return (
-    <div className="flex flex-col gap-1">
-      <ConfirmButton
-        question={`ลบ "${name}" ? ลบแล้วกู้คืนไม่ได้`}
-        onConfirm={async () => {
-          const result = await deleteGuestAction({ id })
-          setError(result.ok ? null : result.message)
-        }}
-      >
-        ลบ
-      </ConfirmButton>
-      {error ? (
-        <span className="field-error" role="alert">
-          {error}
-        </span>
-      ) : null}
-    </div>
-  )
-}
 
 export function GuestTable({ guests }: { guests: Guest[] }) {
   const [keyword, setKeyword] = useState('')
@@ -132,19 +107,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
         emptyMessage={guests.length === 0 ? 'ยังไม่มีรายชื่อแขก' : 'ไม่พบแขกที่ตรงกับที่กรอง'}
       >
         {filtered.map((guest) => (
-          <tr key={guest.id}>
-            <td>{guest.name}</td>
-            <td>{guest.side === 'groom' ? 'เจ้าบ่าว' : 'เจ้าสาว'}</td>
-            <td>{guest.group ?? '—'}</td>
-            <td className="num">{guest.companionsEstimated}</td>
-            <td className="num">{guest.companionsConfirmed ?? 'ยังไม่ถาม'}</td>
-            <td>
-              <RsvpSelect id={guest.id} rsvp={guest.rsvp} name={guest.name} />
-            </td>
-            <td>
-              <DeleteGuestButton id={guest.id} name={guest.name} />
-            </td>
-          </tr>
+          <GuestRow key={guest.id} guest={guest} columnCount={COLUMNS.length} />
         ))}
       </DataTable>
     </>
