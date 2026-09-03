@@ -1,8 +1,9 @@
 import 'server-only'
-import { asc, eq } from 'drizzle-orm'
+import { asc, desc, eq } from 'drizzle-orm'
 import { connection } from 'next/server'
 import { db } from '@/db'
-import { expenses, vendors } from '@/db/schema'
+import type { Envelope } from '@/db/schema'
+import { envelopes, expenses, vendors } from '@/db/schema'
 
 export type VendorOption = { id: number; name: string }
 
@@ -48,4 +49,9 @@ export async function loadExpensesPage(): Promise<{
   ])
 
   return { rows, vendorOptions }
+}
+
+export async function listEnvelopes(): Promise<Envelope[]> {
+  await connection()
+  return db.select().from(envelopes).orderBy(desc(envelopes.id))
 }
