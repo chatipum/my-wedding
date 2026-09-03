@@ -2,11 +2,12 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import type { ChecklistStatus, Rsvp } from '@/db/schema'
-import { checklistItems, envelopes, expenses, guests } from '@/db/schema'
+import { checklistItems, envelopes, expenses, guests, vendors } from '@/db/schema'
 import type { ChecklistValues } from '@/lib/schemas/checklist'
 import type { EnvelopeValues } from '@/lib/schemas/envelope'
 import type { ExpenseValues } from '@/lib/schemas/expense'
 import type { GuestValues } from '@/lib/schemas/guest'
+import type { VendorValues } from '@/lib/schemas/vendor'
 
 export async function createExpense(values: ExpenseValues): Promise<void> {
   await db.insert(expenses).values(values)
@@ -57,4 +58,12 @@ export async function setChecklistStatus(id: number, status: ChecklistStatus): P
 
 export async function deleteChecklistItem(id: number): Promise<void> {
   await db.delete(checklistItems).where(eq(checklistItems.id, id))
+}
+
+export async function createVendor(values: VendorValues): Promise<void> {
+  await db.insert(vendors).values(values)
+}
+
+export async function deleteVendor(id: number): Promise<void> {
+  await db.delete(vendors).where(eq(vendors.id, id))
 }

@@ -2,9 +2,9 @@ import 'server-only'
 import { asc, desc, eq } from 'drizzle-orm'
 import { connection } from 'next/server'
 import { db } from '@/db'
-import type { ChecklistStatus, Envelope, Guest } from '@/db/schema'
+import type { ChecklistStatus, Envelope, Guest, Vendor } from '@/db/schema'
 import { checklistItems, envelopes, expenses, guests, vendors } from '@/db/schema'
-import type { AmountRow, DeadlineRow, GuestRow } from '@/lib/totals'
+import type { AmountRow, DeadlineRow, GuestRow, VendorExpenseRow } from '@/lib/totals'
 
 export type VendorOption = { id: number; name: string }
 
@@ -138,4 +138,37 @@ export async function loadChecklistPage(): Promise<{
   ])
 
   return { items, vendorOptions }
+}
+
+/**
+ * JOIN ครั้งเดียวแล้วรวมยอดใน JS — ห้ามวน query หายอดทีละเจ้า (N+1)
+ * และไม่ใช้ GROUP BY เพราะตรรกะการเงินที่อยู่ใน SQL ทดสอบด้วย unit test ไม่ได้
+ */
+export async function loadVendorsPage(): Promise<{
+  vendorRows: Vendor[]
+  expenseRows: VendorExpenseRow[]
+}> {
+  await connection()
+
+  const joined = await db
+    .select({
+      vendor: vendors,
+      amount: expenses.amount,
+      isPaid: expenses.isPaid,
+      expenseId: expenses.id,
+    })
+    .from(vendors)
+    .leftJoin(expenses, eq(expenses.vendorId, vendors.id))
+    .orderBy(asc(vendors.id), asc(expenses.id))
+
+  const vendorMap = new Map(joined.map((row) => [row.vendor.id, row.vendor]))
+  // leftJoin ให้แถวที่ไม่มี expense กลับมาด้วย — แถวแบบนั้นไม่ใช่ค่าใช้จ่าย
+  // (isPaid เป็น NOT NULL ในตาราง expenses จริง แต่ leftJoin ทำให้ type เป็น nullable — แคบ type ตรงนี้)
+  const expenseRows: VendorExpenseRow[] = joined
+    .filter(
+      (row): row is typeof row & { expenseId: number; isPaid: boolean } => row.expenseId !== null,
+    )
+    .map((row) => ({ vendorId: row.vendor.id, amount: row.amount, isPaid: row.isPaid }))
+
+  return { vendorRows: [...vendorMap.values()], expenseRows }
 }
