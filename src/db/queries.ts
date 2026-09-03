@@ -2,7 +2,7 @@ import 'server-only'
 import { asc, desc, eq } from 'drizzle-orm'
 import { connection } from 'next/server'
 import { db } from '@/db'
-import type { Envelope } from '@/db/schema'
+import type { Envelope, Guest } from '@/db/schema'
 import { checklistItems, envelopes, expenses, guests, vendors } from '@/db/schema'
 import type { AmountRow, DeadlineRow, GuestRow } from '@/lib/totals'
 
@@ -55,6 +55,12 @@ export async function loadExpensesPage(): Promise<{
 export async function listEnvelopes(): Promise<Envelope[]> {
   await connection()
   return db.select().from(envelopes).orderBy(desc(envelopes.id))
+}
+
+/** โหลดทั้ง 400 แถวรวดเดียว — ค้นหา/filter ทำฝั่ง client ไม่ยิง query เพิ่ม */
+export async function listGuests(): Promise<Guest[]> {
+  await connection()
+  return db.select().from(guests).orderBy(asc(guests.id))
 }
 
 /**
