@@ -1,8 +1,9 @@
 import 'server-only'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
-import type { Rsvp } from '@/db/schema'
-import { envelopes, expenses, guests } from '@/db/schema'
+import type { ChecklistStatus, Rsvp } from '@/db/schema'
+import { checklistItems, envelopes, expenses, guests } from '@/db/schema'
+import type { ChecklistValues } from '@/lib/schemas/checklist'
 import type { EnvelopeValues } from '@/lib/schemas/envelope'
 import type { ExpenseValues } from '@/lib/schemas/expense'
 import type { GuestValues } from '@/lib/schemas/guest'
@@ -44,4 +45,16 @@ export async function setGuestRsvp(id: number, rsvp: Rsvp): Promise<void> {
 
 export async function deleteGuest(id: number): Promise<void> {
   await db.delete(guests).where(eq(guests.id, id))
+}
+
+export async function createChecklistItem(values: ChecklistValues): Promise<void> {
+  await db.insert(checklistItems).values(values)
+}
+
+export async function setChecklistStatus(id: number, status: ChecklistStatus): Promise<void> {
+  await db.update(checklistItems).set({ status }).where(eq(checklistItems.id, id))
+}
+
+export async function deleteChecklistItem(id: number): Promise<void> {
+  await db.delete(checklistItems).where(eq(checklistItems.id, id))
 }

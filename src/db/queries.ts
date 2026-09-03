@@ -2,7 +2,7 @@ import 'server-only'
 import { asc, desc, eq } from 'drizzle-orm'
 import { connection } from 'next/server'
 import { db } from '@/db'
-import type { Envelope, Guest } from '@/db/schema'
+import type { ChecklistStatus, Envelope, Guest } from '@/db/schema'
 import { checklistItems, envelopes, expenses, guests, vendors } from '@/db/schema'
 import type { AmountRow, DeadlineRow, GuestRow } from '@/lib/totals'
 
@@ -96,4 +96,46 @@ export async function loadDashboard(): Promise<{
   ])
 
   return { expenseRows, envelopeRows, guestRows, checklistRows }
+}
+
+export type ChecklistWithVendor = {
+  id: number
+  name: string
+  category: string | null
+  status: ChecklistStatus
+  budget: number | null
+  deadline: string | null
+  depositPaid: boolean
+  vendorId: number | null
+  vendorName: string | null
+  note: string | null
+}
+
+export async function loadChecklistPage(): Promise<{
+  items: ChecklistWithVendor[]
+  vendorOptions: VendorOption[]
+}> {
+  await connection()
+
+  const [items, vendorOptions] = await db.batch([
+    db
+      .select({
+        id: checklistItems.id,
+        name: checklistItems.name,
+        category: checklistItems.category,
+        status: checklistItems.status,
+        budget: checklistItems.budget,
+        deadline: checklistItems.deadline,
+        depositPaid: checklistItems.depositPaid,
+        vendorId: checklistItems.vendorId,
+        vendorName: vendors.name,
+        note: checklistItems.note,
+      })
+      .from(checklistItems)
+      .leftJoin(vendors, eq(checklistItems.vendorId, vendors.id))
+      .orderBy(asc(checklistItems.deadline), asc(checklistItems.id)),
+    db.select({ id: vendors.id, name: vendors.name }).from(vendors).orderBy(asc(vendors.id)),
+  ])
+
+  return { items, vendorOptions }
 }
