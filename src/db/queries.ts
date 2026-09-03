@@ -3,7 +3,8 @@ import { asc, desc, eq } from 'drizzle-orm'
 import { connection } from 'next/server'
 import { db } from '@/db'
 import type { Envelope } from '@/db/schema'
-import { envelopes, expenses, vendors } from '@/db/schema'
+import { checklistItems, envelopes, expenses, guests, vendors } from '@/db/schema'
+import type { AmountRow, DeadlineRow, GuestRow } from '@/lib/totals'
 
 export type VendorOption = { id: number; name: string }
 
@@ -54,4 +55,39 @@ export async function loadExpensesPage(): Promise<{
 export async function listEnvelopes(): Promise<Envelope[]> {
   await connection()
   return db.select().from(envelopes).orderBy(desc(envelopes.id))
+}
+
+/**
+ * Neon HTTP คิด 1 query = 1 HTTP round trip — batch 4 statement ให้เหลือรอบเดียว
+ * แล้วดึงแถวดิบมาคำนวณด้วยฟังก์ชันบริสุทธิ์ ไม่ยิง GROUP BY เพิ่มเพื่อประหยัดการบวกเลข 35 ตัว
+ */
+export async function loadDashboard(): Promise<{
+  expenseRows: AmountRow[]
+  envelopeRows: { amount: number }[]
+  guestRows: GuestRow[]
+  checklistRows: DeadlineRow[]
+}> {
+  await connection()
+
+  const [expenseRows, envelopeRows, guestRows, checklistRows] = await db.batch([
+    db.select({ amount: expenses.amount, isPaid: expenses.isPaid }).from(expenses),
+    db.select({ amount: envelopes.amount }).from(envelopes),
+    db
+      .select({
+        rsvp: guests.rsvp,
+        companionsEstimated: guests.companionsEstimated,
+        companionsConfirmed: guests.companionsConfirmed,
+      })
+      .from(guests),
+    db
+      .select({
+        id: checklistItems.id,
+        name: checklistItems.name,
+        status: checklistItems.status,
+        deadline: checklistItems.deadline,
+      })
+      .from(checklistItems),
+  ])
+
+  return { expenseRows, envelopeRows, guestRows, checklistRows }
 }
