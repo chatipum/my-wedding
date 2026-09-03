@@ -2,10 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import * as v from 'valibot'
-import { createVendor, deleteVendor } from '@/db/mutations'
+import { createVendor, deleteVendor, updateVendor } from '@/db/mutations'
 import { type ActionResult, toActionResult } from '@/lib/action-result'
 import { idSchema } from '@/lib/schemas/shared'
-import { vendorInputSchema } from '@/lib/schemas/vendor'
+import { vendorInputSchema, vendorUpdateSchema } from '@/lib/schemas/vendor'
 
 function revalidate(): void {
   revalidatePath('/vendors')
@@ -18,6 +18,17 @@ export async function createVendorAction(raw: unknown): Promise<ActionResult> {
   try {
     const values = v.parse(vendorInputSchema, raw)
     await createVendor(values)
+    revalidate()
+    return { ok: true }
+  } catch (error) {
+    return toActionResult(error)
+  }
+}
+
+export async function updateVendorAction(raw: unknown): Promise<ActionResult> {
+  try {
+    const { id, ...values } = v.parse(vendorUpdateSchema, raw)
+    await updateVendor(id, values)
     revalidate()
     return { ok: true }
   } catch (error) {

@@ -7,14 +7,35 @@ import type * as v from 'valibot'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
+import type { Vendor } from '@/db/schema'
 import { vendorInputSchema } from '@/lib/schemas/vendor'
-import { createVendorAction } from './actions'
+import { createVendorAction, updateVendorAction } from './actions'
 
 type FormInput = v.InferInput<typeof vendorInputSchema>
 
 const EMPTY: FormInput = { name: '', role: '', phone: '', line: '', totalPrice: '', note: '' }
 
-export function VendorForm() {
+export type VendorFormInitial = FormInput & { id: number }
+
+export function toVendorFormValues(vendor: Vendor): VendorFormInitial {
+  return {
+    id: vendor.id,
+    name: vendor.name,
+    role: vendor.role ?? '',
+    phone: vendor.phone ?? '',
+    line: vendor.line ?? '',
+    totalPrice: vendor.totalPrice === null ? '' : String(vendor.totalPrice),
+    note: vendor.note ?? '',
+  }
+}
+
+export function VendorForm({
+  initial,
+  onDone,
+}: {
+  initial?: VendorFormInitial
+  onDone?: () => void
+}) {
   const [serverError, setServerError] = useState<{ message: string; detail?: string } | null>(null)
 
   const {
@@ -25,16 +46,21 @@ export function VendorForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormInput>({
     resolver: valibotResolver(vendorInputSchema, undefined, { raw: true }),
-    defaultValues: EMPTY,
+    defaultValues: initial ?? EMPTY,
   })
 
   const onSubmit = handleSubmit(async (values) => {
-    const result = await createVendorAction(values)
+    const result = initial
+      ? await updateVendorAction({ id: initial.id, ...values })
+      : await createVendorAction(values)
+
     if (result.ok) {
-      reset(EMPTY)
       setServerError(null)
+      if (initial) onDone?.()
+      else reset(EMPTY)
       return
     }
+
     Object.entries(result.fieldErrors ?? {}).forEach(([field, message]) => {
       setError(field as keyof FormInput, { message })
     })
@@ -67,8 +93,13 @@ export function VendorForm() {
 
         <div className="sm:col-span-3 flex items-center gap-3">
           <Button type="submit" disabled={isSubmitting}>
-            เพิ่มผู้ให้บริการ
+            {initial ? 'บันทึกการแก้ไข' : 'เพิ่มผู้ให้บริการ'}
           </Button>
+          {initial ? (
+            <Button variant="ghost" onClick={() => onDone?.()}>
+              ยกเลิก
+            </Button>
+          ) : null}
           {serverError ? (
             <span className="field-error">
               {serverError.message}

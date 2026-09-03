@@ -1,15 +1,11 @@
-import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { DataTable } from '@/components/ui/data-table'
-import { DateText } from '@/components/ui/date-text'
 import { Money } from '@/components/ui/money'
 import { PageHeader } from '@/components/ui/page-header'
 import { loadExpensesPage } from '@/db/queries'
 import { summarizeByCategory, summarizeExpenses } from '@/lib/totals'
-import { paidStatus } from '@/lib/ui'
-import { DeleteExpenseButton } from './delete-expense-button'
 import { ExpenseForm } from './expense-form'
-import { PaidToggle } from './paid-toggle'
+import { ExpenseRow } from './expense-row'
 
 const COLUMNS = [
   { key: 'paid', label: 'จ่ายแล้ว' },
@@ -49,31 +45,14 @@ export default async function ExpensesPage() {
           isEmpty={rows.length === 0}
           emptyMessage="ยังไม่มีรายการค่าใช้จ่าย"
         >
-          {rows.map((row) => {
-            const status = paidStatus(row.amount, row.isPaid)
-            return (
-              <tr key={row.id}>
-                <td>
-                  <PaidToggle id={row.id} isPaid={row.isPaid} label={row.name} />
-                </td>
-                <td>{row.name}</td>
-                <td>{row.category ?? '—'}</td>
-                <td>{row.vendorName ?? '—'}</td>
-                <td>
-                  <DateText value={row.dueDate} />
-                </td>
-                <td className="num">
-                  <Money value={row.amount} />
-                </td>
-                <td>
-                  <Badge status={status.key}>{status.label}</Badge>
-                </td>
-                <td>
-                  <DeleteExpenseButton id={row.id} name={row.name} />
-                </td>
-              </tr>
-            )
-          })}
+          {rows.map((row) => (
+            <ExpenseRow
+              key={row.id}
+              row={row}
+              vendorOptions={vendorOptions}
+              columnCount={COLUMNS.length}
+            />
+          ))}
         </DataTable>
       </Card>
 

@@ -64,6 +64,10 @@ export async function createVendor(values: VendorValues): Promise<void> {
   await db.insert(vendors).values(values)
 }
 
+export async function updateVendor(id: number, values: VendorValues): Promise<void> {
+  await db.update(vendors).set(values).where(eq(vendors.id, id))
+}
+
 export async function deleteVendor(id: number): Promise<void> {
   await db.delete(vendors).where(eq(vendors.id, id))
 }

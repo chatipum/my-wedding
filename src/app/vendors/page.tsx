@@ -1,11 +1,10 @@
 import { Card } from '@/components/ui/card'
 import { DataTable } from '@/components/ui/data-table'
-import { Money } from '@/components/ui/money'
 import { PageHeader } from '@/components/ui/page-header'
 import { loadVendorsPage } from '@/db/queries'
 import { summarizeByVendor } from '@/lib/totals'
-import { DeleteVendorButton } from './delete-vendor-button'
 import { VendorForm } from './vendor-form'
+import { VendorRow } from './vendor-row'
 
 const COLUMNS = [
   { key: 'name', label: 'ผู้ให้บริการ' },
@@ -38,30 +37,14 @@ export default async function VendorsPage() {
           isEmpty={vendorRows.length === 0}
           emptyMessage="ยังไม่มีผู้ให้บริการ"
         >
-          {vendorRows.map((vendor) => {
-            const summary = totals.get(vendor.id)
-            return (
-              <tr key={vendor.id}>
-                <td>{vendor.name}</td>
-                <td>{vendor.role ?? '—'}</td>
-                <td>{vendor.phone ? <a href={`tel:${vendor.phone}`}>{vendor.phone}</a> : '—'}</td>
-                <td>{vendor.line ?? '—'}</td>
-                <td className="num">
-                  <Money value={vendor.totalPrice} />
-                </td>
-                <td className="num">
-                  <Money value={summary?.paid ?? 0} />
-                </td>
-                <td className="num">
-                  <Money value={summary?.unpaid ?? 0} />
-                </td>
-                <td className="num">{summary?.unknownCount ?? 0}</td>
-                <td>
-                  <DeleteVendorButton id={vendor.id} name={vendor.name} />
-                </td>
-              </tr>
-            )
-          })}
+          {vendorRows.map((vendor) => (
+            <VendorRow
+              key={vendor.id}
+              vendor={vendor}
+              summary={totals.get(vendor.id)}
+              columnCount={COLUMNS.length}
+            />
+          ))}
         </DataTable>
       </Card>
     </>
