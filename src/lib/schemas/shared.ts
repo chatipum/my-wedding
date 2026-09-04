@@ -58,10 +58,24 @@ export const optionalId = v.pipe(
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
+/** ตรวจว่าเป็นวันที่ที่มีอยู่จริง (กัน 2026-13-45 / 2026-02-31 ที่ผ่านแค่รูปแบบแต่ Postgres ปฏิเสธ) */
+const isValidCalendarDate = (s: string) => {
+  const trimmed = s.trim()
+  if (trimmed === '') return true
+  const parsed = new Date(`${trimmed}T00:00:00Z`)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === trimmed
+}
+
 export const optionalDate = v.pipe(
   v.string(),
   v.check((s) => s.trim() === '' || ISO_DATE.test(s.trim()), 'วันที่ต้องอยู่ในรูปแบบ ปปปป-ดด-วว'),
+  v.check(isValidCalendarDate, 'ไม่มีวันที่นี้อยู่จริง'),
   v.transform((s): string | null => (s.trim() === '' ? null : s.trim())),
 )
 
-export const requiredDate = v.pipe(v.string(), v.trim(), v.regex(ISO_DATE, 'ต้องใส่วันที่'))
+export const requiredDate = v.pipe(
+  v.string(),
+  v.trim(),
+  v.regex(ISO_DATE, 'ต้องใส่วันที่'),
+  v.check(isValidCalendarDate, 'ไม่มีวันที่นี้อยู่จริง'),
+)

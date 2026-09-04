@@ -22,7 +22,8 @@
 - ตั้ง `DATABASE_URL` และ `APP_ENV=production` ใน environment ของ host
 - **เลือก region ของ host ให้ตรงกับ region ของ Neon** ไม่งั้นทุก query ช้าขึ้น 10 เท่า
 - ยังไม่มีระบบ login ตามที่เจ้าของงานเลือกไว้ ถ้าจะเพิ่มรหัสผ่านภายหลัง
-  ให้สร้าง `middleware.ts` ไฟล์เดียว แล้ว **ปิด `<details>` ที่โชว์ error จริงใน `src/lib/action-result.ts` ด้วย**
+  ให้สร้าง `middleware.ts` ไฟล์เดียว แล้ว **ปิด `<details>` ที่โชว์ error จริงใน `src/lib/action-result.ts`
+  และ `src/app/error.tsx` ด้วย**
 
 ## เทส
 

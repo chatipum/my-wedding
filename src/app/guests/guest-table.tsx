@@ -54,8 +54,8 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
         <input
           className="input max-w-xs"
           type="search"
-          placeholder="ค้นหาชื่อ"
-          aria-label="ค้นหาชื่อแขก"
+          placeholder="ค้นหาชื่อ / กลุ่ม / หมายเหตุ"
+          aria-label="ค้นหาชื่อ / กลุ่ม / หมายเหตุ"
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
         />

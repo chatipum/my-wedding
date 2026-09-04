@@ -33,27 +33,35 @@ if (dryRun) {
 
 const existingVendors = await db.select({ id: vendors.id }).from(vendors).limit(1)
 const existingExpenses = await db.select({ id: expenses.id }).from(expenses).limit(1)
+const hasExistingData = existingVendors.length > 0 || existingExpenses.length > 0
 
-if ((existingVendors.length > 0 || existingExpenses.length > 0) && !force) {
+if (hasExistingData && !force) {
   console.error('ตารางมีข้อมูลอยู่แล้ว — ถ้าตั้งใจจะ seed ทับให้ใส่ --force')
   process.exit(1)
 }
 
+const insertVendors = db.insert(vendors).values(file.vendors)
+const insertExpenses = db.insert(expenses).values(
+  file.expenses.map((e) => ({
+    name: e.name,
+    category: e.category,
+    amount: e.amount,
+    isPaid: e.isPaid,
+    vendorId: e.vendorId,
+    dueDate: e.dueDate,
+    note: e.note,
+  })),
+)
+
 // neon-http ไม่รองรับ db.transaction() — batch คือวิธีเดียวที่ได้ all-or-nothing
-await db.batch([
-  db.insert(vendors).values(file.vendors),
-  db.insert(expenses).values(
-    file.expenses.map((e) => ({
-      name: e.name,
-      category: e.category,
-      amount: e.amount,
-      isPaid: e.isPaid,
-      vendorId: e.vendorId,
-      dueDate: e.dueDate,
-      note: e.note,
-    })),
-  ),
-])
+if (hasExistingData && force) {
+  console.warn(
+    'คำเตือน — --force: กำลังจะลบข้อมูลเดิมทั้งหมดใน expenses แล้วใน vendors (ลบ expenses ก่อนเพราะติด FK) ก่อน seed ทับ',
+  )
+  await db.batch([db.delete(expenses), db.delete(vendors), insertVendors, insertExpenses])
+} else {
+  await db.batch([insertVendors, insertExpenses])
+}
 
 // insert id ตรงๆ ลงคอลัมน์ serial ไม่ขยับ sequence — ถ้าไม่ setval แถวที่เพิ่มในเว็บจะชน id ทันที
 await db.execute(

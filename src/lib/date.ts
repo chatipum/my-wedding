@@ -24,6 +24,9 @@ export function formatThaiDate(iso: string): string {
   return `${day} ${MONTHS[month - 1]} ${String(buddhistYear).padStart(2, '0')}`
 }
 
+const TODAY_FORMAT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' })
+
+/** วันที่ "วันนี้" ตามเวลาไทย (ไม่ใช่ UTC) — en-CA ให้รูปแบบ ปปปป-ดด-วว อยู่แล้ว */
 export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
+  return TODAY_FORMAT.format(new Date())
 }

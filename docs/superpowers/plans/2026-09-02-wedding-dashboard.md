@@ -4920,3 +4920,11 @@ git commit -m "docs: document deploy notes and finish v1 checklist"
 **`/vendors` ใช้ JOIN ครั้งเดียวแล้วรวมยอดใน JS ไม่ใช่ `GROUP BY`**
 
 สเปคข้อ 6 เขียนว่า "`JOIN + GROUP BY` ครั้งเดียว" แต่ข้อ 9 ระบุว่ายอดต่อ vendor ต้องมี unit test และข้อ 6 เองก็ให้เหตุผลว่า "ตรรกะการเงินที่อยู่ใน SQL ทดสอบด้วย unit test ไม่ได้" สองข้อนี้ขัดกัน plan เลือกทางที่รักษาเจตนาหลักไว้ทั้งคู่: ยิง query เดียว (ไม่มี N+1 ตามที่ข้อ 6 ต้องการ) แล้วรวมยอดด้วย `summarizeByVendor` ที่มีเทสครอบ (ตามที่ข้อ 9 ต้องการ) ต้นทุนคือดึงแถว expense ที่ผูก vendor กลับมาทั้งหมด ~35 แถว ซึ่งไม่มีนัยสำคัญ
+
+**RSVP กับสถานะ checklist ใช้ `<select>` ไม่ใช่ `<input type="checkbox">` ตามที่สเปคข้อ 11 เขียน**
+
+ทั้ง RSVP (`pending` / `yes` / `no`) และสถานะ checklist (`not_started` / `in_progress` / `done`) มี 3 สถานะ ซึ่ง `<input type="checkbox">` แทนไม่ได้ (มีแค่ 2 สถานะ) `<input type="checkbox">` ยังใช้จริงกับ "จ่ายแล้ว" ของ expense/checklist ซึ่งมี 2 สถานะตามสเปค
+
+**`valibotResolver(schema, undefined, { raw: true })` แทน `useForm<In, unknown, Out>` ของสเปค**
+
+แบบที่สเปคเขียนไว้ส่งค่าที่ transform แล้ว (เช่น string → number) ไปให้ server action ที่ต้อง `v.parse` ซ้ำด้วย schema ฝั่ง input ตัวเดิม → ฟอร์มส่งไม่ผ่านสักครั้งเพราะ input schema คาดหวังสตริงดิบ การใส่ `raw: true` ทำให้ resolver validate ฝั่ง client ด้วย schema เดิมได้ตามปกติ แต่ยังส่งค่าดิบ (string) ไป server ทำให้กฎ "server ต้อง parse ซ้ำด้วย schema ตัวเดียวกับที่ client ใช้" เป็นจริงได้จริง

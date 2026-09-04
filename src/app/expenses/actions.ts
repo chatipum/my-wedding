@@ -9,6 +9,7 @@ import { idSchema } from '@/lib/schemas/shared'
 
 function revalidate(): void {
   revalidatePath('/expenses')
+  revalidatePath('/vendors')
   revalidatePath('/')
 }
 

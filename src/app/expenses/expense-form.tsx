@@ -134,7 +134,7 @@ export function ExpenseForm({
             </Button>
           ) : null}
           {serverError ? (
-            <span className="field-error">
+            <span className="field-error" role="alert">
               {serverError.message}
               {serverError.detail ? (
                 <details className="inline-block ml-2">
