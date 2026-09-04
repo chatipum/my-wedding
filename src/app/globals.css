@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #faf8f6;
+  --color-surface: #ffffff;
+  --color-border: #e9e2dc;
+  --color-ink: #2b2521;
+  --color-muted: #8b7f77;
+  --color-accent: #b08968;
+  --color-paid: #4a7c59;
+  --color-unpaid: #b4552d;
+  --color-unknown: #8b7f77;
+  --radius-card: 12px;
+  --font-sans: var(--font-ibm-plex-sans-thai), system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+}
+
+@layer components {
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 1rem;
+  }
+  .input {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-surface);
+    width: 100%;
+  }
+  .btn {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--color-accent);
+    color: #fff;
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--color-border);
+  }
+  .btn-danger {
+    background: transparent;
+    color: var(--color-unpaid);
+    border: 1px solid var(--color-unpaid);
+  }
+  .btn[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .table th,
+  .table td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .table td.num,
+  .table th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .badge {
+    border-radius: 999px;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.8125rem;
+    display: inline-block;
+  }
+  .field-error {
+    color: var(--color-unpaid);
+    font-size: 0.8125rem;
+  }
+}

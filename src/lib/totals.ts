@@ -1,0 +1,139 @@
+import type { ChecklistStatus, Rsvp } from '@/db/schema'
+
+export const NO_CATEGORY = 'ไม่ระบุหมวด'
+
+export type AmountRow = { amount: number | null; isPaid: boolean }
+export type MoneySummary = { paid: number; unpaid: number; unknownCount: number }
+
+export function summarizeExpenses(rows: AmountRow[]): MoneySummary {
+  return rows.reduce<MoneySummary>(
+    (acc, row) => {
+      // null = ยังไม่รู้ยอด ห้ามนับเป็น 0 เพราะทำให้ตัวเลขค้างจ่ายต่ำกว่าความจริงเงียบๆ
+      if (row.amount === null) {
+        return { paid: acc.paid, unpaid: acc.unpaid, unknownCount: acc.unknownCount + 1 }
+      }
+      if (row.isPaid) {
+        return { paid: acc.paid + row.amount, unpaid: acc.unpaid, unknownCount: acc.unknownCount }
+      }
+      return { paid: acc.paid, unpaid: acc.unpaid + row.amount, unknownCount: acc.unknownCount }
+    },
+    { paid: 0, unpaid: 0, unknownCount: 0 },
+  )
+}
+
+export type CategoryRow = AmountRow & { category: string | null }
+export type CategorySummary = MoneySummary & { category: string; total: number; count: number }
+
+export function summarizeByCategory(rows: CategoryRow[]): CategorySummary[] {
+  const buckets = new Map<string, CategoryRow[]>()
+
+  rows.forEach((row) => {
+    const key = row.category?.trim() || NO_CATEGORY
+    buckets.set(key, [...(buckets.get(key) ?? []), row])
+  })
+
+  return [...buckets.entries()]
+    .map(([category, bucketRows]) => {
+      const summary = summarizeExpenses(bucketRows)
+      return {
+        category,
+        ...summary,
+        total: summary.paid + summary.unpaid,
+        count: bucketRows.length,
+      }
+    })
+    .sort((a, b) => b.total - a.total || a.category.localeCompare(b.category, 'th'))
+}
+
+export function sumEnvelopes(rows: { amount: number }[]): number {
+  return rows.reduce((total, row) => total + row.amount, 0)
+}
+
+export type NetSummary = MoneySummary & { received: number; net: number }
+
+export function summarizeNet(
+  expenseRows: AmountRow[],
+  envelopeRows: { amount: number }[],
+): NetSummary {
+  const expenses = summarizeExpenses(expenseRows)
+  const received = sumEnvelopes(envelopeRows)
+  return { ...expenses, received, net: received - expenses.paid - expenses.unpaid }
+}
+
+export type GuestRow = {
+  rsvp: Rsvp
+  companionsEstimated: number
+  companionsConfirmed: number | null
+}
+export type GuestCounts = {
+  estimated: number
+  confirmed: number
+  declined: number
+  pending: number
+}
+
+export function countGuests(rows: GuestRow[]): GuestCounts {
+  return rows.reduce<GuestCounts>(
+    (acc, row) => {
+      if (row.rsvp === 'no') {
+        return {
+          estimated: acc.estimated,
+          confirmed: acc.confirmed,
+          declined: acc.declined + 1,
+          pending: acc.pending,
+        }
+      }
+
+      const pending = row.rsvp === 'pending' ? acc.pending + 1 : acc.pending
+      const estimated = acc.estimated + 1 + row.companionsEstimated
+      // null = ยังไม่ได้ถามผู้ติดตาม จึงยังต้องใช้ตัวเลขที่คาดไว้
+      const confirmed =
+        row.rsvp === 'yes'
+          ? acc.confirmed + 1 + (row.companionsConfirmed ?? row.companionsEstimated)
+          : acc.confirmed
+
+      return { estimated, confirmed, declined: acc.declined, pending }
+    },
+    { estimated: 0, confirmed: 0, declined: 0, pending: 0 },
+  )
+}
+
+export type VendorExpenseRow = AmountRow & { vendorId: number | null }
+export type VendorSummary = MoneySummary & { total: number; count: number }
+
+export function summarizeByVendor(rows: VendorExpenseRow[]): Map<number, VendorSummary> {
+  const buckets = new Map<number, VendorExpenseRow[]>()
+
+  rows
+    .filter((row): row is VendorExpenseRow & { vendorId: number } => row.vendorId !== null)
+    .forEach((row) => {
+      buckets.set(row.vendorId, [...(buckets.get(row.vendorId) ?? []), row])
+    })
+
+  return new Map(
+    [...buckets.entries()].map(([vendorId, bucketRows]): [number, VendorSummary] => {
+      const summary = summarizeExpenses(bucketRows)
+      return [
+        vendorId,
+        { ...summary, total: summary.paid + summary.unpaid, count: bucketRows.length },
+      ]
+    }),
+  )
+}
+
+export type DeadlineRow = {
+  id: number
+  name: string
+  status: ChecklistStatus
+  deadline: string | null
+}
+
+export function upcomingDeadlines(rows: DeadlineRow[], limit = 5): DeadlineRow[] {
+  return rows
+    .filter(
+      (row): row is DeadlineRow & { deadline: string } =>
+        row.status !== 'done' && row.deadline !== null,
+    )
+    .sort((a, b) => a.deadline.localeCompare(b.deadline))
+    .slice(0, limit)
+}

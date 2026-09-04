@@ -1,0 +1,23 @@
+# env — เก็บ DATABASE_URL จริง ห้ามขึ้น git
+.env
+.env.test
+.env*.local
+!.env.example
+
+# dependencies
+node_modules/
+
+# next
+.next/
+out/
+next-env.d.ts
+
+# build / cache
+dist/
+*.tsbuildinfo
+
+# logs
+*.log
+
+# subagent-driven-development scratch
+.superpowers/
