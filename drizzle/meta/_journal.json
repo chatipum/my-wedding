@@ -8,6 +8,13 @@
       "when": 1788332449303,
       "tag": "0000_chief_falcon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788531064887,
+      "tag": "0001_fair_hellfire_club",
+      "breakpoints": true
     }
   ]
 }

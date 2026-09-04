@@ -48,6 +48,8 @@ export const guests = pgTable('guests', {
   /** null = ยังไม่ได้ถาม ต่างจาก 0 = ถามแล้ว มาคนเดียว */
   companionsConfirmed: integer('companions_confirmed'),
   rsvp: text('rsvp').$type<Rsvp>().notNull().default('pending'),
+  /** แจกการ์ด/ซองเชิญให้แขกรายนี้แล้วหรือยัง — คนละเรื่องกับตาราง envelopes ที่เก็บซองเงินที่ได้รับ */
+  invitationGiven: boolean('invitation_given').notNull().default(false),
   note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })

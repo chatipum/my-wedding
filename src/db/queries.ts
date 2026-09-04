@@ -83,6 +83,7 @@ export async function loadDashboard(): Promise<{
         rsvp: guests.rsvp,
         companionsEstimated: guests.companionsEstimated,
         companionsConfirmed: guests.companionsConfirmed,
+        invitationGiven: guests.invitationGiven,
       })
       .from(guests),
     db

@@ -64,23 +64,29 @@ export type GuestRow = {
   rsvp: Rsvp
   companionsEstimated: number
   companionsConfirmed: number | null
+  invitationGiven: boolean
 }
 export type GuestCounts = {
   estimated: number
   confirmed: number
   declined: number
   pending: number
+  invitationsGiven: number
 }
 
 export function countGuests(rows: GuestRow[]): GuestCounts {
   return rows.reduce<GuestCounts>(
     (acc, row) => {
+      // นับก่อนแยกทาง rsvp — คนที่ตอบว่าไม่มาก็ได้รับการ์ดไปแล้วจริง ต่างจากยอดประมาณการที่ตัดเขาออก
+      const invitationsGiven = row.invitationGiven ? acc.invitationsGiven + 1 : acc.invitationsGiven
+
       if (row.rsvp === 'no') {
         return {
           estimated: acc.estimated,
           confirmed: acc.confirmed,
           declined: acc.declined + 1,
           pending: acc.pending,
+          invitationsGiven,
         }
       }
 
@@ -92,9 +98,9 @@ export function countGuests(rows: GuestRow[]): GuestCounts {
           ? acc.confirmed + 1 + (row.companionsConfirmed ?? row.companionsEstimated)
           : acc.confirmed
 
-      return { estimated, confirmed, declined: acc.declined, pending }
+      return { estimated, confirmed, declined: acc.declined, pending, invitationsGiven }
     },
-    { estimated: 0, confirmed: 0, declined: 0, pending: 0 },
+    { estimated: 0, confirmed: 0, declined: 0, pending: 0, invitationsGiven: 0 },
   )
 }
 

@@ -15,6 +15,9 @@ export default async function GuestsPage() {
         <span>ประมาณการ {counts.estimated} คน</span>
         <span>ยืนยันแล้ว {counts.confirmed} คน</span>
         <span>ยังไม่ตอบ {counts.pending} ราย</span>
+        <span>
+          แจกซองแล้ว {counts.invitationsGiven} จาก {guests.length} ราย
+        </span>
       </PageHeader>
 
       <GuestForm />

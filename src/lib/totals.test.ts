@@ -107,42 +107,84 @@ describe('summarizeNet', () => {
 describe('countGuests', () => {
   it('ประมาณการนับทุกแถวที่ยังไม่ปฏิเสธ บวกผู้ติดตามที่คาดไว้', () => {
     const counts = countGuests([
-      { rsvp: 'pending', companionsEstimated: 2, companionsConfirmed: null },
-      { rsvp: 'yes', companionsEstimated: 1, companionsConfirmed: null },
-      { rsvp: 'no', companionsEstimated: 3, companionsConfirmed: null },
+      {
+        rsvp: 'pending',
+        companionsEstimated: 2,
+        companionsConfirmed: null,
+        invitationGiven: false,
+      },
+      { rsvp: 'yes', companionsEstimated: 1, companionsConfirmed: null, invitationGiven: false },
+      { rsvp: 'no', companionsEstimated: 3, companionsConfirmed: null, invitationGiven: false },
     ])
     expect(counts.estimated).toBe(5)
   })
 
   it('ยืนยันแล้วนับเฉพาะ rsvp=yes และใช้ confirmed ถ้ามี', () => {
     const counts = countGuests([
-      { rsvp: 'yes', companionsEstimated: 2, companionsConfirmed: 0 },
-      { rsvp: 'yes', companionsEstimated: 1, companionsConfirmed: 3 },
-      { rsvp: 'pending', companionsEstimated: 5, companionsConfirmed: null },
+      { rsvp: 'yes', companionsEstimated: 2, companionsConfirmed: 0, invitationGiven: false },
+      { rsvp: 'yes', companionsEstimated: 1, companionsConfirmed: 3, invitationGiven: false },
+      {
+        rsvp: 'pending',
+        companionsEstimated: 5,
+        companionsConfirmed: null,
+        invitationGiven: false,
+      },
     ])
     expect(counts.confirmed).toBe(5)
   })
 
   it('companionsConfirmed เป็น null (ยังไม่ได้ถาม) ตกกลับไปใช้ค่าที่คาดไว้', () => {
     expect(
-      countGuests([{ rsvp: 'yes', companionsEstimated: 2, companionsConfirmed: null }]).confirmed,
+      countGuests([
+        { rsvp: 'yes', companionsEstimated: 2, companionsConfirmed: null, invitationGiven: false },
+      ]).confirmed,
     ).toBe(3)
   })
 
   it('confirmed = 0 ต่างจาก null — ถามแล้วมาคนเดียว', () => {
     expect(
-      countGuests([{ rsvp: 'yes', companionsEstimated: 2, companionsConfirmed: 0 }]).confirmed,
+      countGuests([
+        { rsvp: 'yes', companionsEstimated: 2, companionsConfirmed: 0, invitationGiven: false },
+      ]).confirmed,
     ).toBe(1)
   })
 
   it('นับจำนวนคนที่ปฏิเสธและที่ยังไม่ตอบ', () => {
     const counts = countGuests([
-      { rsvp: 'no', companionsEstimated: 0, companionsConfirmed: null },
-      { rsvp: 'pending', companionsEstimated: 0, companionsConfirmed: null },
-      { rsvp: 'pending', companionsEstimated: 0, companionsConfirmed: null },
+      { rsvp: 'no', companionsEstimated: 0, companionsConfirmed: null, invitationGiven: false },
+      {
+        rsvp: 'pending',
+        companionsEstimated: 0,
+        companionsConfirmed: null,
+        invitationGiven: false,
+      },
+      {
+        rsvp: 'pending',
+        companionsEstimated: 0,
+        companionsConfirmed: null,
+        invitationGiven: false,
+      },
     ])
     expect(counts.declined).toBe(1)
     expect(counts.pending).toBe(2)
+  })
+
+  it('นับซองที่แจกแล้ว รวมคนที่ตอบว่าไม่มาด้วย เพราะการ์ดถูกแจกไปแล้วจริง', () => {
+    const counts = countGuests([
+      { rsvp: 'yes', companionsEstimated: 0, companionsConfirmed: null, invitationGiven: true },
+      { rsvp: 'no', companionsEstimated: 0, companionsConfirmed: null, invitationGiven: true },
+      {
+        rsvp: 'pending',
+        companionsEstimated: 0,
+        companionsConfirmed: null,
+        invitationGiven: false,
+      },
+    ])
+    expect(counts.invitationsGiven).toBe(2)
+  })
+
+  it('ไม่มีแถวเลย ตัวนับซองเป็นศูนย์', () => {
+    expect(countGuests([]).invitationsGiven).toBe(0)
   })
 })
 
