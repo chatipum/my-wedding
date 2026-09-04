@@ -13,6 +13,7 @@ const COLUMNS = [
   { key: 'estimated', label: 'ผู้ติดตาม (คาด)', numeric: true },
   { key: 'confirmed', label: 'ผู้ติดตาม (ยืนยัน)', numeric: true },
   { key: 'rsvp', label: 'ตอบรับ' },
+  { key: 'invitation', label: 'แจกซอง' },
   { key: 'actions', label: '' },
 ]
 
@@ -21,6 +22,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
   const [side, setSide] = useState('')
   const [group, setGroup] = useState('')
   const [rsvp, setRsvp] = useState('')
+  const [invitation, setInvitation] = useState('')
 
   const groups = useMemo(
     () =>
@@ -37,6 +39,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
       if (side && guest.side !== side) return false
       if (group && guest.group !== group) return false
       if (rsvp && guest.rsvp !== rsvp) return false
+      if (invitation && guest.invitationGiven !== (invitation === 'given')) return false
       if (
         needle &&
         !`${guest.name} ${guest.group ?? ''} ${guest.note ?? ''}`.toLowerCase().includes(needle)
@@ -44,7 +47,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
         return false
       return true
     })
-  }, [guests, keyword, side, group, rsvp])
+  }, [guests, keyword, side, group, rsvp, invitation])
 
   const counts = countGuests(filtered)
 
@@ -93,11 +96,21 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
           <option value="yes">มาแน่</option>
           <option value="no">ไม่มา</option>
         </select>
+        <select
+          className="input max-w-40"
+          aria-label="กรองตามการแจกซอง"
+          value={invitation}
+          onChange={(e) => setInvitation(e.target.value)}
+        >
+          <option value="">ซองทุกสถานะ</option>
+          <option value="given">แจกแล้ว</option>
+          <option value="not-given">ยังไม่แจก</option>
+        </select>
       </div>
 
       <p className="text-muted mb-2">
         แสดง {filtered.length} จาก {guests.length} ราย · ประมาณการ {counts.estimated} คน · ยืนยันแล้ว{' '}
-        {counts.confirmed} คน
+        {counts.confirmed} คน · แจกซองแล้ว {counts.invitationsGiven} จาก {filtered.length} ราย
       </p>
 
       <DataTable

@@ -18,5 +18,11 @@ export const guestUpdateSchema = v.object({ id: idNumber, ...guestInputSchema.en
 
 export const toggleRsvpSchema = v.object({ id: idNumber, rsvp: rsvpSchema })
 
+/**
+ * แยกจาก guestInputSchema ตั้งใจ — ฟอร์มเพิ่ม/แก้ไขไม่มีช่องนี้
+ * ถ้ารวมเข้าไป updateGuest จะ set ค่ากลับเป็น false ทุกครั้งที่แก้ชื่อแขก
+ */
+export const toggleInvitationSchema = v.object({ id: idNumber, invitationGiven: v.boolean() })
+
 export type GuestInput = v.InferInput<typeof guestInputSchema>
 export type GuestValues = v.InferOutput<typeof guestInputSchema>
