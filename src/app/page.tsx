@@ -3,12 +3,13 @@ import { Card } from '@/components/ui/card'
 import { Money } from '@/components/ui/money'
 import { PageHeader } from '@/components/ui/page-header'
 import { loadDashboard } from '@/db/queries'
-import { countGuests, summarizeNet } from '@/lib/totals'
+import { countGuests, countGuestsBySide, summarizeNet } from '@/lib/totals'
 
 export default async function DashboardPage() {
   const { expenseRows, envelopeRows, guestRows } = await loadDashboard()
   const money = summarizeNet(expenseRows, envelopeRows)
   const guestCounts = countGuests(guestRows)
+  const bySide = countGuestsBySide(guestRows)
 
   return (
     <>
@@ -49,9 +50,19 @@ export default async function DashboardPage() {
           <h2 className="font-semibold mb-2">แขก</h2>
           <p>
             ประมาณการ <strong>{guestCounts.estimated}</strong> คน
+            <span className="text-muted">
+              {' · '}เจ้าบ่าว {bySide.groom.estimated} · เจ้าสาว {bySide.bride.estimated}
+            </span>
           </p>
           <p>
             ยืนยันแล้ว <strong>{guestCounts.confirmed}</strong> คน
+            <span className="text-muted">
+              {' · '}เจ้าบ่าว {bySide.groom.confirmed} · เจ้าสาว {bySide.bride.confirmed}
+            </span>
+          </p>
+          <p>
+            {/* หน่วยเป็นซอง ไม่ใช่คน — แจกต่อแถวแขก ผู้ติดตามไม่ได้ซองของตัวเอง */}
+            แจกซองแล้ว <strong>{guestCounts.invitationsGiven}</strong> จาก {guestCounts.total} ซอง
           </p>
           <p className="text-muted text-sm">
             ยังไม่ตอบ {guestCounts.pending} ราย · ตอบว่าไม่มา {guestCounts.declined} ราย

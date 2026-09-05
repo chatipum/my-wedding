@@ -4,7 +4,7 @@ import { connection } from 'next/server'
 import { db } from '@/db'
 import type { Envelope, Guest, Vendor } from '@/db/schema'
 import { envelopes, expenses, guests, vendors } from '@/db/schema'
-import type { AmountRow, GuestRow, VendorExpenseRow } from '@/lib/totals'
+import type { AmountRow, SidedGuestRow, VendorExpenseRow } from '@/lib/totals'
 
 export type VendorOption = { id: number; name: string }
 
@@ -70,7 +70,7 @@ export async function listGuests(): Promise<Guest[]> {
 export async function loadDashboard(): Promise<{
   expenseRows: AmountRow[]
   envelopeRows: { amount: number }[]
-  guestRows: GuestRow[]
+  guestRows: SidedGuestRow[]
 }> {
   await connection()
 
@@ -80,6 +80,7 @@ export async function loadDashboard(): Promise<{
     db
       .select({
         rsvp: guests.rsvp,
+        side: guests.side,
         companionsEstimated: guests.companionsEstimated,
         companionsConfirmed: guests.companionsConfirmed,
         invitationGiven: guests.invitationGiven,

@@ -1,4 +1,4 @@
-import type { Rsvp } from '@/db/schema'
+import type { Rsvp, Side } from '@/db/schema'
 
 export const NO_CATEGORY = 'ไม่ระบุหมวด'
 
@@ -72,6 +72,8 @@ export type GuestCounts = {
   declined: number
   pending: number
   invitationsGiven: number
+  /** จำนวนแถวแขก ไม่ใช่จำนวนคน — เป็นตัวหารของยอดแจกซอง เพราะซองแจกต่อแถว ไม่ได้แจกรายผู้ติดตาม */
+  total: number
 }
 
 export function countGuests(rows: GuestRow[]): GuestCounts {
@@ -79,6 +81,7 @@ export function countGuests(rows: GuestRow[]): GuestCounts {
     (acc, row) => {
       // นับก่อนแยกทาง rsvp — คนที่ตอบว่าไม่มาก็ได้รับการ์ดไปแล้วจริง ต่างจากยอดประมาณการที่ตัดเขาออก
       const invitationsGiven = row.invitationGiven ? acc.invitationsGiven + 1 : acc.invitationsGiven
+      const total = acc.total + 1
 
       if (row.rsvp === 'no') {
         return {
@@ -87,6 +90,7 @@ export function countGuests(rows: GuestRow[]): GuestCounts {
           declined: acc.declined + 1,
           pending: acc.pending,
           invitationsGiven,
+          total,
         }
       }
 
@@ -98,10 +102,23 @@ export function countGuests(rows: GuestRow[]): GuestCounts {
           ? acc.confirmed + 1 + (row.companionsConfirmed ?? row.companionsEstimated)
           : acc.confirmed
 
-      return { estimated, confirmed, declined: acc.declined, pending, invitationsGiven }
+      return { estimated, confirmed, declined: acc.declined, pending, invitationsGiven, total }
     },
-    { estimated: 0, confirmed: 0, declined: 0, pending: 0, invitationsGiven: 0 },
+    { estimated: 0, confirmed: 0, declined: 0, pending: 0, invitationsGiven: 0, total: 0 },
   )
+}
+
+export type SidedGuestRow = GuestRow & { side: Side }
+
+/**
+ * filter แล้วเรียก countGuests ซ้ำต่อฝั่ง ไม่ก๊อปตรรกะการนับมาไว้ที่นี่ —
+ * กฎ companionsConfirmed = null และการตัดคนที่ตอบว่าไม่มา ต้องอยู่ที่เดียว
+ */
+export function countGuestsBySide(rows: SidedGuestRow[]): Record<Side, GuestCounts> {
+  return {
+    groom: countGuests(rows.filter((row) => row.side === 'groom')),
+    bride: countGuests(rows.filter((row) => row.side === 'bride')),
+  }
 }
 
 export type VendorExpenseRow = AmountRow & { vendorId: number | null }

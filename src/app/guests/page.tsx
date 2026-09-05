@@ -16,7 +16,7 @@ export default async function GuestsPage() {
         <span>ยืนยันแล้ว {counts.confirmed} คน</span>
         <span>ยังไม่ตอบ {counts.pending} ราย</span>
         <span>
-          แจกซองแล้ว {counts.invitationsGiven} จาก {guests.length} ราย
+          แจกซองแล้ว {counts.invitationsGiven} จาก {counts.total} ซอง
         </span>
       </PageHeader>
 
