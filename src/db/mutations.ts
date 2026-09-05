@@ -1,9 +1,7 @@
 import 'server-only'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
-import type { ChecklistStatus } from '@/db/schema'
-import { checklistItems, envelopes, expenses, guests, vendors } from '@/db/schema'
-import type { ChecklistValues } from '@/lib/schemas/checklist'
+import { envelopes, expenses, guests, vendors } from '@/db/schema'
 import type { EnvelopeValues } from '@/lib/schemas/envelope'
 import type { ExpenseValues } from '@/lib/schemas/expense'
 import type { GuestValues } from '@/lib/schemas/guest'
@@ -54,22 +52,6 @@ export async function setGuestInvitationGiven(id: number, invitationGiven: boole
 
 export async function deleteGuest(id: number): Promise<void> {
   await db.delete(guests).where(eq(guests.id, id))
-}
-
-export async function createChecklistItem(values: ChecklistValues): Promise<void> {
-  await db.insert(checklistItems).values(values)
-}
-
-export async function updateChecklistItem(id: number, values: ChecklistValues): Promise<void> {
-  await db.update(checklistItems).set(values).where(eq(checklistItems.id, id))
-}
-
-export async function setChecklistStatus(id: number, status: ChecklistStatus): Promise<void> {
-  await db.update(checklistItems).set({ status }).where(eq(checklistItems.id, id))
-}
-
-export async function deleteChecklistItem(id: number): Promise<void> {
-  await db.delete(checklistItems).where(eq(checklistItems.id, id))
 }
 
 export async function createVendor(values: VendorValues): Promise<void> {

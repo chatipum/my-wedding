@@ -2,7 +2,6 @@ import { boolean, date, integer, pgTable, serial, text, timestamp } from 'drizzl
 
 export type Side = 'groom' | 'bride'
 export type Rsvp = 'pending' | 'yes' | 'no'
-export type ChecklistStatus = 'not_started' | 'in_progress' | 'done'
 
 export const vendors = pgTable('vendors', {
   id: serial('id').primaryKey(),
@@ -54,20 +53,6 @@ export const guests = pgTable('guests', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
-export const checklistItems = pgTable('checklist_items', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  category: text('category'),
-  status: text('status').$type<ChecklistStatus>().notNull().default('not_started'),
-  /** "เงินที่ตั้งไว้" — ไม่ถูกนำไปบวกที่ใดทั้งสิ้น ยอดรวมนับจาก expenses เท่านั้น */
-  budget: integer('budget'),
-  deadline: date('deadline'),
-  depositPaid: boolean('deposit_paid').notNull().default(false),
-  vendorId: integer('vendor_id').references(() => vendors.id),
-  note: text('note'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
-
 export type Vendor = typeof vendors.$inferSelect
 export type NewVendor = typeof vendors.$inferInsert
 export type Expense = typeof expenses.$inferSelect
@@ -76,5 +61,3 @@ export type Envelope = typeof envelopes.$inferSelect
 export type NewEnvelope = typeof envelopes.$inferInsert
 export type Guest = typeof guests.$inferSelect
 export type NewGuest = typeof guests.$inferInsert
-export type ChecklistItem = typeof checklistItems.$inferSelect
-export type NewChecklistItem = typeof checklistItems.$inferInsert

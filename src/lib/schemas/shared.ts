@@ -24,7 +24,7 @@ const digits = (s: string) => s.replace(/[,\s]/g, '')
 const isValidDigits = (s: string) => digits(s) === '' || /^\d+$/.test(digits(s))
 const isWithinRange = (s: string) => digits(s) === '' || Number(digits(s)) <= MAX_INT
 
-/** string เข้า → number | null ออก · '' = ยังไม่ระบุ (เช่น ยอดค่าใช้จ่าย · งบ checklist · ราคาเหมา vendor) */
+/** string เข้า → number | null ออก · '' = ยังไม่ระบุ (เช่น ยอดค่าใช้จ่าย · ราคาเหมา vendor) */
 export const optionalInteger = v.pipe(
   v.string(),
   v.check(isValidDigits, 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),

@@ -1,4 +1,4 @@
-import type { ChecklistStatus, Rsvp } from '@/db/schema'
+import type { Rsvp } from '@/db/schema'
 
 export const NO_CATEGORY = 'ไม่ระบุหมวด'
 
@@ -125,21 +125,4 @@ export function summarizeByVendor(rows: VendorExpenseRow[]): Map<number, VendorS
       ]
     }),
   )
-}
-
-export type DeadlineRow = {
-  id: number
-  name: string
-  status: ChecklistStatus
-  deadline: string | null
-}
-
-export function upcomingDeadlines(rows: DeadlineRow[], limit = 5): DeadlineRow[] {
-  return rows
-    .filter(
-      (row): row is DeadlineRow & { deadline: string } =>
-        row.status !== 'done' && row.deadline !== null,
-    )
-    .sort((a, b) => a.deadline.localeCompare(b.deadline))
-    .slice(0, limit)
 }
