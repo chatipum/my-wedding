@@ -10,7 +10,6 @@ import { vendorInputSchema, vendorUpdateSchema } from '@/lib/schemas/vendor'
 function revalidate(): void {
   revalidatePath('/vendors')
   revalidatePath('/expenses')
-  revalidatePath('/checklist')
   revalidatePath('/')
 }
 

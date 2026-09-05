@@ -5,7 +5,6 @@ const LINKS = [
   { href: '/expenses', label: 'ค่าใช้จ่าย' },
   { href: '/envelopes', label: 'ซองรับ' },
   { href: '/guests', label: 'แขก' },
-  { href: '/checklist', label: 'Checklist' },
   { href: '/vendors', label: 'ผู้ให้บริการ' },
 ] as const
 

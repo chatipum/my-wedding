@@ -7,7 +7,6 @@ import {
   summarizeByVendor,
   summarizeExpenses,
   summarizeNet,
-  upcomingDeadlines,
 } from '@/lib/totals'
 
 describe('summarizeExpenses', () => {
@@ -206,28 +205,5 @@ describe('summarizeByVendor', () => {
     expect(map.get(2)).toEqual({ paid: 0, unpaid: 0, total: 0, unknownCount: 1, count: 1 })
     expect(map.has(0)).toBe(false)
     expect(map.size).toBe(2)
-  })
-})
-
-describe('upcomingDeadlines', () => {
-  it('เอาเฉพาะงานที่ยังไม่เสร็จและมี deadline เรียงจากใกล้ที่สุด', () => {
-    const rows = upcomingDeadlines([
-      { id: 1, name: 'จองช่างภาพ', status: 'done', deadline: '2026-09-10' },
-      { id: 2, name: 'ส่งการ์ด', status: 'in_progress', deadline: '2026-10-01' },
-      { id: 3, name: 'ลองชุด', status: 'not_started', deadline: '2026-09-20' },
-      { id: 4, name: 'ของชำร่วย', status: 'not_started', deadline: null },
-    ])
-    expect(rows.map((r) => r.id)).toEqual([3, 2])
-  })
-
-  it('จำกัดจำนวนตาม limit', () => {
-    const rows = upcomingDeadlines(
-      [
-        { id: 1, name: 'a', status: 'not_started', deadline: '2026-09-01' },
-        { id: 2, name: 'b', status: 'not_started', deadline: '2026-09-02' },
-      ],
-      1,
-    )
-    expect(rows.map((r) => r.id)).toEqual([1])
   })
 })

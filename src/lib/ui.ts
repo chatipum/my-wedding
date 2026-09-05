@@ -1,4 +1,4 @@
-import type { ChecklistStatus, Rsvp } from '@/db/schema'
+import type { Rsvp } from '@/db/schema'
 
 export type StatusKey = 'paid' | 'unpaid' | 'unknown'
 
@@ -21,11 +21,3 @@ export function rsvpStatus(rsvp: Rsvp): { key: StatusKey; label: string } {
   if (rsvp === 'no') return { key: 'unpaid', label: 'ไม่มา' }
   return { key: 'unknown', label: 'ยังไม่ตอบ' }
 }
-
-export function checklistStatus(status: ChecklistStatus): { key: StatusKey; label: string } {
-  if (status === 'done') return { key: 'paid', label: 'เสร็จแล้ว' }
-  if (status === 'in_progress') return { key: 'unpaid', label: 'กำลังทำ' }
-  return { key: 'unknown', label: 'ยังไม่เริ่ม' }
-}
-
-export const CHECKLIST_STATUS_ORDER: ChecklistStatus[] = ['in_progress', 'not_started', 'done']

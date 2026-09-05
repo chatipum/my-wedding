@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DateText } from '@/components/ui/date-text'
+import { PencilIcon } from '@/components/ui/icons'
 import { Money } from '@/components/ui/money'
 import type { ExpenseWithVendor, VendorOption } from '@/db/queries'
 import { paidStatus } from '@/lib/ui'
@@ -45,10 +46,12 @@ export function ExpenseRow({
         <td className="flex gap-2">
           <Button
             variant="ghost"
+            aria-label={`แก้ไข ${row.name}`}
+            title={`แก้ไข ${row.name}`}
             aria-expanded={isEditing}
             onClick={() => setIsEditing((open) => !open)}
           >
-            แก้ไข
+            <PencilIcon />
           </Button>
           <DeleteExpenseButton id={row.id} name={row.name} />
         </td>

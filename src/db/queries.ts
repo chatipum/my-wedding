@@ -2,9 +2,9 @@ import 'server-only'
 import { asc, desc, eq } from 'drizzle-orm'
 import { connection } from 'next/server'
 import { db } from '@/db'
-import type { ChecklistStatus, Envelope, Guest, Vendor } from '@/db/schema'
-import { checklistItems, envelopes, expenses, guests, vendors } from '@/db/schema'
-import type { AmountRow, DeadlineRow, GuestRow, VendorExpenseRow } from '@/lib/totals'
+import type { Envelope, Guest, Vendor } from '@/db/schema'
+import { envelopes, expenses, guests, vendors } from '@/db/schema'
+import type { AmountRow, GuestRow, VendorExpenseRow } from '@/lib/totals'
 
 export type VendorOption = { id: number; name: string }
 
@@ -64,18 +64,17 @@ export async function listGuests(): Promise<Guest[]> {
 }
 
 /**
- * Neon HTTP คิด 1 query = 1 HTTP round trip — batch 4 statement ให้เหลือรอบเดียว
+ * Neon HTTP คิด 1 query = 1 HTTP round trip — batch 3 statement ให้เหลือรอบเดียว
  * แล้วดึงแถวดิบมาคำนวณด้วยฟังก์ชันบริสุทธิ์ ไม่ยิง GROUP BY เพิ่มเพื่อประหยัดการบวกเลข 35 ตัว
  */
 export async function loadDashboard(): Promise<{
   expenseRows: AmountRow[]
   envelopeRows: { amount: number }[]
   guestRows: GuestRow[]
-  checklistRows: DeadlineRow[]
 }> {
   await connection()
 
-  const [expenseRows, envelopeRows, guestRows, checklistRows] = await db.batch([
+  const [expenseRows, envelopeRows, guestRows] = await db.batch([
     db.select({ amount: expenses.amount, isPaid: expenses.isPaid }).from(expenses),
     db.select({ amount: envelopes.amount }).from(envelopes),
     db
@@ -86,59 +85,9 @@ export async function loadDashboard(): Promise<{
         invitationGiven: guests.invitationGiven,
       })
       .from(guests),
-    db
-      .select({
-        id: checklistItems.id,
-        name: checklistItems.name,
-        status: checklistItems.status,
-        deadline: checklistItems.deadline,
-      })
-      .from(checklistItems),
   ])
 
-  return { expenseRows, envelopeRows, guestRows, checklistRows }
-}
-
-export type ChecklistWithVendor = {
-  id: number
-  name: string
-  category: string | null
-  status: ChecklistStatus
-  budget: number | null
-  deadline: string | null
-  depositPaid: boolean
-  vendorId: number | null
-  vendorName: string | null
-  note: string | null
-}
-
-export async function loadChecklistPage(): Promise<{
-  items: ChecklistWithVendor[]
-  vendorOptions: VendorOption[]
-}> {
-  await connection()
-
-  const [items, vendorOptions] = await db.batch([
-    db
-      .select({
-        id: checklistItems.id,
-        name: checklistItems.name,
-        category: checklistItems.category,
-        status: checklistItems.status,
-        budget: checklistItems.budget,
-        deadline: checklistItems.deadline,
-        depositPaid: checklistItems.depositPaid,
-        vendorId: checklistItems.vendorId,
-        vendorName: vendors.name,
-        note: checklistItems.note,
-      })
-      .from(checklistItems)
-      .leftJoin(vendors, eq(checklistItems.vendorId, vendors.id))
-      .orderBy(asc(checklistItems.deadline), asc(checklistItems.id)),
-    db.select({ id: vendors.id, name: vendors.name }).from(vendors).orderBy(asc(vendors.id)),
-  ])
-
-  return { items, vendorOptions }
+  return { expenseRows, envelopeRows, guestRows }
 }
 
 /**

@@ -1,15 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { PencilIcon } from '@/components/ui/icons'
 import type { Guest } from '@/db/schema'
+import { rsvpStatus } from '@/lib/ui'
 import { DeleteGuestButton } from './delete-guest-button'
 import { GuestForm, toGuestFormValues } from './guest-form'
 import { InvitationToggle } from './invitation-toggle'
-import { RsvpSelect } from './rsvp-select'
 
 export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: number }) {
   const [isEditing, setIsEditing] = useState(false)
+  const rsvp = rsvpStatus(guest.rsvp)
 
   return (
     <>
@@ -20,7 +23,7 @@ export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: nu
         <td className="num">{guest.companionsEstimated}</td>
         <td className="num">{guest.companionsConfirmed ?? 'ยังไม่ถาม'}</td>
         <td>
-          <RsvpSelect id={guest.id} rsvp={guest.rsvp} name={guest.name} />
+          <Badge status={rsvp.key}>{rsvp.label}</Badge>
         </td>
         <td>
           <InvitationToggle
@@ -32,10 +35,12 @@ export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: nu
         <td className="flex gap-2">
           <Button
             variant="ghost"
+            aria-label={`แก้ไข ${guest.name}`}
+            title={`แก้ไข ${guest.name}`}
             aria-expanded={isEditing}
             onClick={() => setIsEditing((open) => !open)}
           >
-            แก้ไข
+            <PencilIcon />
           </Button>
           <DeleteGuestButton id={guest.id} name={guest.name} />
         </td>

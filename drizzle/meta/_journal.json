@@ -15,6 +15,13 @@
       "when": 1788531064887,
       "tag": "0001_fair_hellfire_club",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788587062135,
+      "tag": "0002_brown_domino",
+      "breakpoints": true
     }
   ]
 }

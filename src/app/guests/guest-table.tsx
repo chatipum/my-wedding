@@ -1,8 +1,17 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
-import type { Guest } from '@/db/schema'
+import type { Guest, Rsvp, Side } from '@/db/schema'
+import {
+  EMPTY_GUEST_FILTER,
+  filterGuests,
+  type GuestFilter,
+  type InvitationFilter,
+  isGuestFilterActive,
+  toSearchParams,
+} from '@/lib/guest-filter'
 import { countGuests } from '@/lib/totals'
 import { GuestRow } from './guest-row'
 
@@ -18,11 +27,10 @@ const COLUMNS = [
 ]
 
 export function GuestTable({ guests }: { guests: Guest[] }) {
-  const [keyword, setKeyword] = useState('')
-  const [side, setSide] = useState('')
-  const [group, setGroup] = useState('')
-  const [rsvp, setRsvp] = useState('')
-  const [invitation, setInvitation] = useState('')
+  const [filter, setFilter] = useState<GuestFilter>(EMPTY_GUEST_FILTER)
+
+  const update = <K extends keyof GuestFilter>(key: K, value: GuestFilter[K]) =>
+    setFilter((current) => ({ ...current, [key]: value }))
 
   const groups = useMemo(
     () =>
@@ -33,21 +41,10 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
   )
 
   // 400 แถวกรองใน memory เร็วกว่ายิง query ใหม่ทุกครั้งที่พิมพ์
-  const filtered = useMemo(() => {
-    const needle = keyword.trim().toLowerCase()
-    return guests.filter((guest) => {
-      if (side && guest.side !== side) return false
-      if (group && guest.group !== group) return false
-      if (rsvp && guest.rsvp !== rsvp) return false
-      if (invitation && guest.invitationGiven !== (invitation === 'given')) return false
-      if (
-        needle &&
-        !`${guest.name} ${guest.group ?? ''} ${guest.note ?? ''}`.toLowerCase().includes(needle)
-      )
-        return false
-      return true
-    })
-  }, [guests, keyword, side, group, rsvp, invitation])
+  const filtered = useMemo(() => filterGuests(guests, filter), [guests, filter])
+
+  // ส่งตัวกรองไปให้ route ทาง query string — server กรองซ้ำด้วย filterGuests ตัวเดียวกัน
+  const exportQuery = toSearchParams(filter).toString()
 
   const counts = countGuests(filtered)
 
@@ -59,14 +56,14 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
           type="search"
           placeholder="ค้นหาชื่อ / กลุ่ม / หมายเหตุ"
           aria-label="ค้นหาชื่อ / กลุ่ม / หมายเหตุ"
-          value={keyword}
-          onChange={(event) => setKeyword(event.target.value)}
+          value={filter.keyword}
+          onChange={(event) => update('keyword', event.target.value)}
         />
         <select
           className="input max-w-40"
           aria-label="กรองตามฝ่าย"
-          value={side}
-          onChange={(e) => setSide(e.target.value)}
+          value={filter.side}
+          onChange={(e) => update('side', e.target.value as Side | '')}
         >
           <option value="">ทุกฝ่าย</option>
           <option value="groom">เจ้าบ่าว</option>
@@ -75,8 +72,8 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
         <select
           className="input max-w-40"
           aria-label="กรองตามกลุ่ม"
-          value={group}
-          onChange={(e) => setGroup(e.target.value)}
+          value={filter.group}
+          onChange={(e) => update('group', e.target.value)}
         >
           <option value="">ทุกกลุ่ม</option>
           {groups.map((name) => (
@@ -88,8 +85,8 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
         <select
           className="input max-w-40"
           aria-label="กรองตามการตอบรับ"
-          value={rsvp}
-          onChange={(e) => setRsvp(e.target.value)}
+          value={filter.rsvp}
+          onChange={(e) => update('rsvp', e.target.value as Rsvp | '')}
         >
           <option value="">ทุกสถานะ</option>
           <option value="pending">ยังไม่ตอบ</option>
@@ -99,13 +96,28 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
         <select
           className="input max-w-40"
           aria-label="กรองตามการแจกซอง"
-          value={invitation}
-          onChange={(e) => setInvitation(e.target.value)}
+          value={filter.invitation}
+          onChange={(e) => update('invitation', e.target.value as InvitationFilter | '')}
         >
           <option value="">ซองทุกสถานะ</option>
           <option value="given">แจกแล้ว</option>
           <option value="not-given">ยังไม่แจก</option>
         </select>
+
+        <Button
+          variant="ghost"
+          className="ml-auto"
+          disabled={!isGuestFilterActive(filter)}
+          onClick={() => setFilter(EMPTY_GUEST_FILTER)}
+        >
+          ล้างตัวกรอง
+        </Button>
+        <a
+          className="btn btn-ghost"
+          href={exportQuery ? `/guests/export?${exportQuery}` : '/guests/export'}
+        >
+          ดาวน์โหลด Excel
+        </a>
       </div>
 
       <p className="text-muted mb-2">

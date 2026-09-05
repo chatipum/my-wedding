@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { DateText } from '@/components/ui/date-text'
+import { PencilIcon } from '@/components/ui/icons'
 import { Money } from '@/components/ui/money'
 import type { Envelope } from '@/db/schema'
 import { DeleteEnvelopeButton } from './delete-envelope-button'
@@ -26,10 +27,12 @@ export function EnvelopeRow({ row, columnCount }: { row: Envelope; columnCount: 
         <td className="flex gap-2">
           <Button
             variant="ghost"
+            aria-label={`แก้ไขซองของ ${label}`}
+            title={`แก้ไขซองของ ${label}`}
             aria-expanded={isEditing}
             onClick={() => setIsEditing((open) => !open)}
           >
-            แก้ไข
+            <PencilIcon />
           </Button>
           <DeleteEnvelopeButton id={row.id} label={label} />
         </td>

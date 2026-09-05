@@ -1,19 +1,14 @@
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
-import { DataTable } from '@/components/ui/data-table'
-import { DateText } from '@/components/ui/date-text'
 import { Money } from '@/components/ui/money'
 import { PageHeader } from '@/components/ui/page-header'
 import { loadDashboard } from '@/db/queries'
-import { countGuests, summarizeNet, upcomingDeadlines } from '@/lib/totals'
-import { checklistStatus } from '@/lib/ui'
+import { countGuests, summarizeNet } from '@/lib/totals'
 
 export default async function DashboardPage() {
-  const { expenseRows, envelopeRows, guestRows, checklistRows } = await loadDashboard()
+  const { expenseRows, envelopeRows, guestRows } = await loadDashboard()
   const money = summarizeNet(expenseRows, envelopeRows)
   const guestCounts = countGuests(guestRows)
-  const deadlines = upcomingDeadlines(checklistRows)
 
   return (
     <>
@@ -64,35 +59,6 @@ export default async function DashboardPage() {
           <Link href="/guests" className="text-accent mt-2 inline-block">
             ดูรายชื่อแขก
           </Link>
-        </Card>
-
-        <Card>
-          <h2 className="font-semibold mb-2">งานค้างที่ใกล้กำหนด</h2>
-          <DataTable
-            caption="งานที่ยังไม่เสร็จ เรียงตามกำหนดส่ง"
-            columns={[
-              { key: 'name', label: 'งาน' },
-              { key: 'status', label: 'สถานะ' },
-              { key: 'deadline', label: 'กำหนด' },
-            ]}
-            isEmpty={deadlines.length === 0}
-            emptyMessage="ยังไม่มีงานที่ตั้งกำหนดไว้"
-          >
-            {deadlines.map((row) => {
-              const status = checklistStatus(row.status)
-              return (
-                <tr key={row.id}>
-                  <td>{row.name}</td>
-                  <td>
-                    <Badge status={status.key}>{status.label}</Badge>
-                  </td>
-                  <td>
-                    <DateText value={row.deadline} />
-                  </td>
-                </tr>
-              )
-            })}
-          </DataTable>
         </Card>
       </div>
     </>
