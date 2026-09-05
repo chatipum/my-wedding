@@ -4,6 +4,7 @@ import { Money } from '@/components/ui/money'
 import { PageHeader } from '@/components/ui/page-header'
 import { loadDashboard } from '@/db/queries'
 import { countGuests, countGuestsBySide, summarizeNet } from '@/lib/totals'
+import { BreakEvenCard } from './break-even-card'
 
 export default async function DashboardPage() {
   const { expenseRows, envelopeRows, guestRows } = await loadDashboard()
@@ -71,6 +72,13 @@ export default async function DashboardPage() {
             ดูรายชื่อแขก
           </Link>
         </Card>
+
+        <BreakEvenCard
+          totalExpense={money.paid + money.unpaid}
+          unknownCount={money.unknownCount}
+          envelopesReceived={envelopeRows.length}
+          guestCounts={guestCounts}
+        />
       </div>
     </>
   )
