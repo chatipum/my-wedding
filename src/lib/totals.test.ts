@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import {
   countGuests,
+  countGuestsBySide,
   NO_CATEGORY,
   sumEnvelopes,
   summarizeByCategory,
@@ -184,6 +185,75 @@ describe('countGuests', () => {
 
   it('ไม่มีแถวเลย ตัวนับซองเป็นศูนย์', () => {
     expect(countGuests([]).invitationsGiven).toBe(0)
+  })
+
+  it('total นับทุกแถว รวมคนที่ตอบว่าไม่มา — เป็นตัวหารของยอดแจกซอง', () => {
+    const counts = countGuests([
+      { rsvp: 'yes', companionsEstimated: 3, companionsConfirmed: null, invitationGiven: true },
+      { rsvp: 'no', companionsEstimated: 0, companionsConfirmed: null, invitationGiven: true },
+      {
+        rsvp: 'pending',
+        companionsEstimated: 0,
+        companionsConfirmed: null,
+        invitationGiven: false,
+      },
+    ])
+    expect(counts.total).toBe(3)
+  })
+})
+
+describe('countGuestsBySide', () => {
+  const rows = [
+    {
+      side: 'groom' as const,
+      rsvp: 'yes' as const,
+      companionsEstimated: 1,
+      companionsConfirmed: 2,
+      invitationGiven: true,
+    },
+    {
+      side: 'groom' as const,
+      rsvp: 'pending' as const,
+      companionsEstimated: 3,
+      companionsConfirmed: null,
+      invitationGiven: false,
+    },
+    {
+      side: 'bride' as const,
+      rsvp: 'yes' as const,
+      companionsEstimated: 0,
+      companionsConfirmed: null,
+      invitationGiven: true,
+    },
+    {
+      side: 'bride' as const,
+      rsvp: 'no' as const,
+      companionsEstimated: 5,
+      companionsConfirmed: null,
+      invitationGiven: true,
+    },
+  ]
+
+  it('แยกแถวเข้าฝั่งของตัวเอง แล้วนับด้วยกฎเดียวกับ countGuests', () => {
+    const bySide = countGuestsBySide(rows)
+    expect(bySide.groom.estimated).toBe(6)
+    expect(bySide.groom.confirmed).toBe(3)
+    expect(bySide.bride.estimated).toBe(1)
+    expect(bySide.bride.confirmed).toBe(1)
+  })
+
+  it('สองฝั่งบวกกันแล้วเท่ากับนับรวมทั้งหมด', () => {
+    const bySide = countGuestsBySide(rows)
+    const all = countGuests(rows)
+    expect(bySide.groom.estimated + bySide.bride.estimated).toBe(all.estimated)
+    expect(bySide.groom.confirmed + bySide.bride.confirmed).toBe(all.confirmed)
+    expect(bySide.groom.total + bySide.bride.total).toBe(all.total)
+  })
+
+  it('ฝั่งที่ไม่มีแขกเลยได้ตัวนับเป็นศูนย์ ไม่ใช่ค่าหาย', () => {
+    const bySide = countGuestsBySide([rows[0]])
+    expect(bySide.bride.total).toBe(0)
+    expect(bySide.bride.estimated).toBe(0)
   })
 })
 

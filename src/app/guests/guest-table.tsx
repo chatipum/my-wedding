@@ -122,7 +122,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
 
       <p className="text-muted mb-2">
         แสดง {filtered.length} จาก {guests.length} ราย · ประมาณการ {counts.estimated} คน · ยืนยันแล้ว{' '}
-        {counts.confirmed} คน · แจกซองแล้ว {counts.invitationsGiven} จาก {filtered.length} ราย
+        {counts.confirmed} คน · แจกซองแล้ว {counts.invitationsGiven} จาก {counts.total} ซอง
       </p>
 
       <DataTable
