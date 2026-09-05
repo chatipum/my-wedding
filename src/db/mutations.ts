@@ -1,7 +1,7 @@
 import 'server-only'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
-import type { ChecklistStatus, Rsvp } from '@/db/schema'
+import type { ChecklistStatus } from '@/db/schema'
 import { checklistItems, envelopes, expenses, guests, vendors } from '@/db/schema'
 import type { ChecklistValues } from '@/lib/schemas/checklist'
 import type { EnvelopeValues } from '@/lib/schemas/envelope'
@@ -46,10 +46,6 @@ export async function createGuest(values: GuestValues): Promise<void> {
 
 export async function updateGuest(id: number, values: GuestValues): Promise<void> {
   await db.update(guests).set(values).where(eq(guests.id, id))
-}
-
-export async function setGuestRsvp(id: number, rsvp: Rsvp): Promise<void> {
-  await db.update(guests).set({ rsvp }).where(eq(guests.id, id))
 }
 
 export async function setGuestInvitationGiven(id: number, invitationGiven: boolean): Promise<void> {

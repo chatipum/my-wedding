@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { PencilIcon } from '@/components/ui/icons'
 import { Money } from '@/components/ui/money'
 import type { Vendor } from '@/db/schema'
 import type { VendorSummary } from '@/lib/totals'
@@ -39,10 +40,12 @@ export function VendorRow({
         <td className="flex gap-2">
           <Button
             variant="ghost"
+            aria-label={`แก้ไข ${vendor.name}`}
+            title={`แก้ไข ${vendor.name}`}
             aria-expanded={isEditing}
             onClick={() => setIsEditing((open) => !open)}
           >
-            แก้ไข
+            <PencilIcon />
           </Button>
           <DeleteVendorButton id={vendor.id} name={vendor.name} />
         </td>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ConfirmButton } from '@/components/ui/confirm-button'
+import { TrashIcon } from '@/components/ui/icons'
 import { deleteVendorAction } from './actions'
 
 export function DeleteVendorButton({ id, name }: { id: number; name: string }) {
@@ -10,13 +11,14 @@ export function DeleteVendorButton({ id, name }: { id: number; name: string }) {
   return (
     <div className="flex flex-col gap-1">
       <ConfirmButton
+        label={`ลบ ${name}`}
         question={`ลบ "${name}" ? ลบแล้วกู้คืนไม่ได้`}
         onConfirm={async () => {
           const result = await deleteVendorAction({ id })
           setError(result.ok ? null : result.message)
         }}
       >
-        ลบ
+        <TrashIcon />
       </ConfirmButton>
       {error ? (
         <span className="field-error" role="alert">

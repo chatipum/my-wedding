@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { DateText } from '@/components/ui/date-text'
+import { PencilIcon } from '@/components/ui/icons'
 import { Money } from '@/components/ui/money'
 import type { ChecklistWithVendor, VendorOption } from '@/db/queries'
 import { ChecklistForm, toChecklistFormValues } from './checklist-form'
@@ -39,10 +40,12 @@ export function ChecklistRow({
         <td className="flex gap-2">
           <Button
             variant="ghost"
+            aria-label={`แก้ไข ${row.name}`}
+            title={`แก้ไข ${row.name}`}
             aria-expanded={isEditing}
             onClick={() => setIsEditing((open) => !open)}
           >
-            แก้ไข
+            <PencilIcon />
           </Button>
           <DeleteChecklistButton id={row.id} name={row.name} />
         </td>

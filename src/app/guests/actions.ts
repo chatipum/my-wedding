@@ -2,20 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import * as v from 'valibot'
-import {
-  createGuest,
-  deleteGuest,
-  setGuestInvitationGiven,
-  setGuestRsvp,
-  updateGuest,
-} from '@/db/mutations'
+import { createGuest, deleteGuest, setGuestInvitationGiven, updateGuest } from '@/db/mutations'
 import { type ActionResult, toActionResult } from '@/lib/action-result'
-import {
-  guestInputSchema,
-  guestUpdateSchema,
-  toggleInvitationSchema,
-  toggleRsvpSchema,
-} from '@/lib/schemas/guest'
+import { guestInputSchema, guestUpdateSchema, toggleInvitationSchema } from '@/lib/schemas/guest'
 import { idSchema } from '@/lib/schemas/shared'
 
 function revalidate(): void {
@@ -27,17 +16,6 @@ export async function createGuestAction(raw: unknown): Promise<ActionResult> {
   try {
     const values = v.parse(guestInputSchema, raw)
     await createGuest(values)
-    revalidate()
-    return { ok: true }
-  } catch (error) {
-    return toActionResult(error)
-  }
-}
-
-export async function setRsvpAction(raw: unknown): Promise<ActionResult> {
-  try {
-    const { id, rsvp } = v.parse(toggleRsvpSchema, raw)
-    await setGuestRsvp(id, rsvp)
     revalidate()
     return { ok: true }
   } catch (error) {
