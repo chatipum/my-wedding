@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import type { Guest, Rsvp, Side } from '@/db/schema'
 import {
@@ -8,6 +9,7 @@ import {
   filterGuests,
   type GuestFilter,
   type InvitationFilter,
+  isGuestFilterActive,
   toSearchParams,
 } from '@/lib/guest-filter'
 import { countGuests } from '@/lib/totals'
@@ -102,8 +104,16 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
           <option value="not-given">ยังไม่แจก</option>
         </select>
 
+        <Button
+          variant="ghost"
+          className="ml-auto"
+          disabled={!isGuestFilterActive(filter)}
+          onClick={() => setFilter(EMPTY_GUEST_FILTER)}
+        >
+          ล้างตัวกรอง
+        </Button>
         <a
-          className="btn btn-ghost ml-auto"
+          className="btn btn-ghost"
           href={exportQuery ? `/guests/export?${exportQuery}` : '/guests/export'}
         >
           ดาวน์โหลด Excel

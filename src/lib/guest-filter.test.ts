@@ -4,6 +4,7 @@ import {
   EMPTY_GUEST_FILTER,
   filterGuests,
   type GuestFilter,
+  isGuestFilterActive,
   parseGuestFilter,
   toSearchParams,
 } from '@/lib/guest-filter'
@@ -144,5 +145,23 @@ describe('toSearchParams', () => {
       rsvp: 'no',
       invitation: 'not-given',
     })
+  })
+})
+
+describe('isGuestFilterActive', () => {
+  it('ตัวกรองว่างถือว่ายังไม่ได้กรอง', () => {
+    expect(isGuestFilterActive(EMPTY_GUEST_FILTER)).toBe(false)
+  })
+
+  it('ตั้งช่องไหนก็ถือว่ากรองแล้ว', () => {
+    expect(isGuestFilterActive(filter({ keyword: 'มานี' }))).toBe(true)
+    expect(isGuestFilterActive(filter({ side: 'bride' }))).toBe(true)
+    expect(isGuestFilterActive(filter({ group: 'ที่ทำงาน' }))).toBe(true)
+    expect(isGuestFilterActive(filter({ rsvp: 'no' }))).toBe(true)
+    expect(isGuestFilterActive(filter({ invitation: 'given' }))).toBe(true)
+  })
+
+  it('คำค้นที่มีแต่เว้นวรรคไม่นับว่ากรอง เพราะกรองแล้วได้ทุกคนอยู่ดี', () => {
+    expect(isGuestFilterActive(filter({ keyword: '   ' }))).toBe(false)
   })
 })

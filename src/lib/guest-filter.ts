@@ -50,6 +50,17 @@ export function filterGuests<T extends FilterableGuest>(guests: T[], filter: Gue
   })
 }
 
+/** คำค้นที่มีแต่เว้นวรรคไม่นับ — filterGuests trim ทิ้งอยู่แล้ว กรองไปก็ได้ทุกคน */
+export function isGuestFilterActive(filter: GuestFilter): boolean {
+  return (
+    filter.keyword.trim() !== '' ||
+    filter.side !== '' ||
+    filter.group !== '' ||
+    filter.rsvp !== '' ||
+    filter.invitation !== ''
+  )
+}
+
 /** ค่าที่ไม่รู้จักกลายเป็น "ไม่กรอง" — ไม่ใช่กรองจนไม่เหลือใคร เพราะ URL แก้มือได้ */
 function pickAllowed<T extends string>(value: string | null, allowed: T[]): T | '' {
   return allowed.find((option) => option === value) ?? ''
