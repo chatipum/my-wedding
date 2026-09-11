@@ -1,71 +1,54 @@
 'use client'
 
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import type * as v from 'valibot'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
-import type { Envelope } from '@/db/schema'
+import { addQuickAmount, formatBaht } from '@/lib/money'
 import { envelopeInputSchema } from '@/lib/schemas/envelope'
-import { createEnvelopeAction, updateEnvelopeAction } from './actions'
+import { createEnvelopeAction } from './actions'
 
 type FormInput = v.InferInput<typeof envelopeInputSchema>
 
-export type EnvelopeFormInitial = FormInput & { id: number }
+/** ยอดที่เจอบ่อยที่สุดหน้างาน — กดบวกสะสมกันได้ */
+const QUICK_AMOUNTS = [100, 200, 500, 1000, 2000]
 
-/** DB row → ค่าในฟอร์ม (ทุกช่องเป็นสตริง เพราะ schema เป็น transform string → number) */
-export function toEnvelopeFormValues(row: Envelope): EnvelopeFormInitial {
-  return {
-    id: row.id,
-    giverName: row.giverName ?? '',
-    amount: String(row.amount),
-    receivedAt: row.receivedAt,
-    note: row.note ?? '',
-  }
-}
-
-export function EnvelopeForm({
-  today,
-  initial,
-  onDone,
-}: {
-  today: string
-  initial?: EnvelopeFormInitial
-  onDone?: () => void
-}) {
+export function EnvelopeForm() {
   const [serverError, setServerError] = useState<{ message: string; detail?: string } | null>(null)
-  const firstFieldRef = useRef<HTMLInputElement | null>(null)
 
   const {
     register,
     handleSubmit,
     reset,
     setError,
+    setValue,
+    setFocus,
     getValues,
     formState: { errors, isSubmitting },
   } = useForm<FormInput>({
     // raw: true — resolver ยังใช้ schema เดิม validate ฝั่ง client แต่ส่งค่าดิบ (string) ไป server
     // เพื่อให้ server v.parse ด้วย schema ตัวเดียวกันได้จริง ไม่ใช่ค่าที่ transform ไปแล้ว
     resolver: valibotResolver(envelopeInputSchema, undefined, { raw: true }),
-    defaultValues: initial ?? { giverName: '', amount: '', receivedAt: today, note: '' },
+    defaultValues: { amount: '' },
   })
 
+  const setAmount = (amount: string) => {
+    // ล้างช่อง (amount === '') ไม่ต้องเด้ง error ทันที รอตอนกดบันทึก
+    setValue('amount', amount, { shouldValidate: amount !== '' })
+    setFocus('amount')
+  }
+
   const onSubmit = handleSubmit(async (values) => {
-    const result = initial
-      ? await updateEnvelopeAction({ id: initial.id, ...values })
-      : await createEnvelopeAction(values)
+    const result = await createEnvelopeAction(values)
 
     if (result.ok) {
       setServerError(null)
-      if (initial) {
-        onDone?.()
-        return
-      }
-      // วันงานกรอกรัว — คงวันที่ไว้ ล้างชื่อกับยอด แล้วคืน focus ไปช่องแรก
-      reset({ giverName: '', amount: '', receivedAt: getValues('receivedAt'), note: '' })
-      firstFieldRef.current?.focus()
+      // วันงานกรอกรัว — ล้างช่องแล้วคืน focus ให้กรอกซองถัดไปได้ทันที
+      reset({ amount: '' })
+      setFocus('amount')
       return
     }
 
@@ -75,50 +58,43 @@ export function EnvelopeForm({
     setServerError({ message: result.message, detail: result.detail })
   })
 
-  const giverName = register('giverName')
-
   return (
     <Card className="mb-6">
-      <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-4">
-        <Field label="ชื่อผู้ให้" hint="ไม่รู้ชื่อก็เว้นว่างได้" error={errors.giverName?.message}>
+      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <Field label="ยอด (บาท)" error={errors.amount?.message}>
           {(props) => (
             <input
               className="input"
+              inputMode="numeric"
+              autoComplete="off"
+              // biome-ignore lint/a11y/noAutofocus: ช่องเดียวในหน้า — เปิดมาต้องพิมพ์ได้เลย
+              autoFocus
               {...props}
-              {...giverName}
-              ref={(element) => {
-                giverName.ref(element)
-                firstFieldRef.current = element
-              }}
+              {...register('amount')}
             />
           )}
         </Field>
 
-        <Field label="ยอด (บาท)" error={errors.amount?.message}>
-          {(props) => (
-            <input className="input" inputMode="numeric" {...props} {...register('amount')} />
-          )}
-        </Field>
-
-        <Field label="วันที่รับ" error={errors.receivedAt?.message}>
-          {(props) => (
-            <input className="input" type="date" {...props} {...register('receivedAt')} />
-          )}
-        </Field>
-
-        <Field label="หมายเหตุ" error={errors.note?.message}>
-          {(props) => <input className="input" {...props} {...register('note')} />}
-        </Field>
-
-        <div className="sm:col-span-4 flex items-center gap-3">
-          <Button type="submit" disabled={isSubmitting}>
-            {initial ? 'บันทึกการแก้ไข' : 'บันทึกซอง'}
-          </Button>
-          {initial ? (
-            <Button variant="ghost" onClick={() => onDone?.()}>
-              ยกเลิก
+        <div className="flex flex-wrap gap-2">
+          {QUICK_AMOUNTS.map((amount) => (
+            <Button
+              key={amount}
+              variant="ghost"
+              aria-label={`เพิ่ม ${formatBaht(amount)}`}
+              onClick={() => setAmount(addQuickAmount(getValues('amount'), amount))}
+            >
+              +{amount.toLocaleString('en-US')}
             </Button>
-          ) : null}
+          ))}
+          <Button variant="ghost" onClick={() => setAmount('')}>
+            ล้าง
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button type="submit" disabled={isSubmitting}>
+            บันทึกซอง
+          </Button>
           {serverError ? (
             <span className="field-error" role="alert">
               {serverError.message}

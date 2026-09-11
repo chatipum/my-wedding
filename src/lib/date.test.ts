@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { formatThaiDate, todayIso } from '@/lib/date'
+import { formatThaiDate, formatThaiDateTime, todayIso } from '@/lib/date'
 
 describe('formatThaiDate', () => {
   it('แปลงเป็นวันเดือนย่อปี พ.ศ. สองหลัก', () => {
@@ -22,5 +22,15 @@ describe('todayIso', () => {
     const bangkokNow = new Date(Date.now() + 7 * 60 * 60 * 1000)
     const expected = bangkokNow.toISOString().slice(0, 10)
     expect(todayIso()).toBe(expected)
+  })
+})
+
+describe('formatThaiDateTime', () => {
+  it('แสดงวันที่แบบไทยต่อด้วยเวลา 24 ชม. ตามเวลาไทย', () => {
+    expect(formatThaiDateTime(new Date('2026-11-28T12:05:00Z'))).toBe('28 พ.ย. 69 19:05')
+  })
+
+  it('ข้ามวันตามเวลาไทย ไม่ใช่ UTC', () => {
+    expect(formatThaiDateTime(new Date('2026-11-28T17:30:00Z'))).toBe('29 พ.ย. 69 00:30')
   })
 })

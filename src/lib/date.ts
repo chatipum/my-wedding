@@ -30,3 +30,20 @@ const TODAY_FORMAT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok'
 export function todayIso(): string {
   return TODAY_FORMAT.format(new Date())
 }
+
+const BANGKOK_PARTS = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Bangkok',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+
+/** timestamp จาก DB → '28 พ.ย. 69 19:05' ตามเวลาไทย (ใช้กับเวลารับซอง) */
+export function formatThaiDateTime(value: Date): string {
+  // en-CA ให้ 'ปปปป-ดด-วว, ชช:นน' — แยกวันกับเวลาแล้วส่งวันต่อให้ formatThaiDate
+  const [iso, time] = BANGKOK_PARTS.format(value).split(', ')
+  return `${formatThaiDate(iso)} ${time}`
+}

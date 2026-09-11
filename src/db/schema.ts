@@ -27,13 +27,10 @@ export const expenses = pgTable('expenses', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+/** วันงานต้องกรอกเร็ว — เก็บแค่ยอด เวลารับใช้ createdAt ตอนกดบันทึก */
 export const envelopes = pgTable('envelopes', {
   id: serial('id').primaryKey(),
-  /** null ได้ — วันงานต้องกรอกเร็ว บางซองไม่รู้ชื่อ */
-  giverName: text('giver_name'),
   amount: integer('amount').notNull(),
-  receivedAt: date('received_at').notNull(),
-  note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
