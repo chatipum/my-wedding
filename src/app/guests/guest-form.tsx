@@ -17,7 +17,6 @@ const BLANK: FormInput = {
   name: '',
   side: 'groom',
   group: '',
-  companionsEstimated: '0',
   companionsConfirmed: '',
   rsvp: 'pending',
   note: '',
@@ -31,7 +30,6 @@ export function toGuestFormValues(guest: Guest): GuestFormInitial {
     name: guest.name,
     side: guest.side,
     group: guest.group ?? '',
-    companionsEstimated: String(guest.companionsEstimated),
     // null = ยังไม่ได้ถาม จึงต้องกลับไปเป็นช่องว่าง ไม่ใช่ '0'
     companionsConfirmed:
       guest.companionsConfirmed === null ? '' : String(guest.companionsConfirmed),
@@ -115,17 +113,6 @@ export function GuestForm({
 
         <Field label="กลุ่ม" hint="ญาติ / เพื่อน / ที่ทำงาน" error={errors.group?.message}>
           {(props) => <input className="input" {...props} {...register('group')} />}
-        </Field>
-
-        <Field label="ผู้ติดตามที่คาดว่าจะมา" error={errors.companionsEstimated?.message}>
-          {(props) => (
-            <input
-              className="input"
-              inputMode="numeric"
-              {...props}
-              {...register('companionsEstimated')}
-            />
-          )}
         </Field>
 
         <Field

@@ -8,7 +8,7 @@ export type BreakEvenInput = {
   /** จ่ายแล้ว + ค้างจ่าย — รายการที่ยังไม่ระบุยอดไม่เข้าสูตร ต้องเตือนบนหน้าจอ */
   totalExpense: number
   perEnvelope: number
-  guestCounts: Pick<GuestCounts, 'estimated' | 'total' | 'declined'>
+  guestCounts: Pick<GuestCounts, 'confirmed' | 'confirmedRows'>
   capacity?: number
 }
 
@@ -32,9 +32,10 @@ export function calculateBreakEven({
 }: BreakEvenInput): BreakEven | null {
   if (!Number.isFinite(perEnvelope) || perEnvelope <= 0) return null
 
-  // แถวที่ตอบว่าไม่มาไม่กินที่นั่ง จึงไม่ควรถ่วงค่าเฉลี่ยให้ต่ำลง
-  const invitableRows = guestCounts.total - guestCounts.declined
-  const peoplePerEnvelope = invitableRows > 0 ? guestCounts.estimated / invitableRows : 1
+  // เฉลี่ยจากแขกที่ตอบว่ามาแล้วเท่านั้น — คนที่ยังไม่ตอบยังไม่รู้ว่าพาใครมาบ้าง
+  // ยังไม่มีใครตอบรับ ถอยไปใช้ 1 คนต่อซอง ไม่ใช่หารด้วยศูนย์แล้วได้เพดานเป็น Infinity
+  const peoplePerEnvelope =
+    guestCounts.confirmedRows > 0 ? guestCounts.confirmed / guestCounts.confirmedRows : 1
 
   const envelopesNeeded = Math.ceil(totalExpense / perEnvelope)
   // ปัดลง — ปัดขึ้นแปลว่าเชิญคนเกินที่นั่งที่มีจริง

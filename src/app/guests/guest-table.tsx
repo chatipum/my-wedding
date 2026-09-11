@@ -19,8 +19,7 @@ const COLUMNS = [
   { key: 'name', label: 'ชื่อ' },
   { key: 'side', label: 'ฝ่าย' },
   { key: 'group', label: 'กลุ่ม' },
-  { key: 'estimated', label: 'ผู้ติดตาม (คาด)', numeric: true },
-  { key: 'confirmed', label: 'ผู้ติดตาม (ยืนยัน)', numeric: true },
+  { key: 'confirmed', label: 'ผู้ติดตามที่ยืนยันแล้ว', numeric: true },
   { key: 'rsvp', label: 'ตอบรับ' },
   { key: 'invitation', label: 'แจกซอง' },
   { key: 'actions', label: '' },
@@ -121,8 +120,8 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
       </div>
 
       <p className="text-muted mb-2">
-        แสดง {filtered.length} จาก {guests.length} ราย · ประมาณการ {counts.estimated} คน · ยืนยันแล้ว{' '}
-        {counts.confirmed} คน · แจกซองแล้ว {counts.invitationsGiven} จาก {counts.total} ซอง
+        แสดง {filtered.length} จาก {guests.length} ราย · ยืนยันแล้ว {counts.confirmed} คน · แจกซองแล้ว{' '}
+        {counts.invitationsGiven} จาก {counts.total} ซอง
       </p>
 
       <DataTable

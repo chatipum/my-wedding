@@ -62,13 +62,14 @@ export function summarizeNet(
 
 export type GuestRow = {
   rsvp: Rsvp
-  companionsEstimated: number
   companionsConfirmed: number | null
   invitationGiven: boolean
 }
 export type GuestCounts = {
-  estimated: number
+  /** คน — ตัวแขกเอง + ผู้ติดตามที่ยืนยันแล้ว นับเฉพาะแถวที่ตอบว่ามา */
   confirmed: number
+  /** แถว ไม่ใช่คน — จำนวนแขกที่ตอบว่ามา เป็นตัวหารของคนเฉลี่ยต่อซอง */
+  confirmedRows: number
   declined: number
   pending: number
   invitationsGiven: number
@@ -85,8 +86,8 @@ export function countGuests(rows: GuestRow[]): GuestCounts {
 
       if (row.rsvp === 'no') {
         return {
-          estimated: acc.estimated,
           confirmed: acc.confirmed,
+          confirmedRows: acc.confirmedRows,
           declined: acc.declined + 1,
           pending: acc.pending,
           invitationsGiven,
@@ -95,16 +96,14 @@ export function countGuests(rows: GuestRow[]): GuestCounts {
       }
 
       const pending = row.rsvp === 'pending' ? acc.pending + 1 : acc.pending
-      const estimated = acc.estimated + 1 + row.companionsEstimated
-      // null = ยังไม่ได้ถามผู้ติดตาม จึงยังต้องใช้ตัวเลขที่คาดไว้
+      // null = ยังไม่ได้ถามผู้ติดตาม นับแค่ตัวแขกเอง ไม่เดาจำนวนให้ — ตัวเลขต่ำไว้ดีกว่าสูงเกินจริง
       const confirmed =
-        row.rsvp === 'yes'
-          ? acc.confirmed + 1 + (row.companionsConfirmed ?? row.companionsEstimated)
-          : acc.confirmed
+        row.rsvp === 'yes' ? acc.confirmed + 1 + (row.companionsConfirmed ?? 0) : acc.confirmed
+      const confirmedRows = row.rsvp === 'yes' ? acc.confirmedRows + 1 : acc.confirmedRows
 
-      return { estimated, confirmed, declined: acc.declined, pending, invitationsGiven, total }
+      return { confirmed, confirmedRows, declined: acc.declined, pending, invitationsGiven, total }
     },
-    { estimated: 0, confirmed: 0, declined: 0, pending: 0, invitationsGiven: 0, total: 0 },
+    { confirmed: 0, confirmedRows: 0, declined: 0, pending: 0, invitationsGiven: 0, total: 0 },
   )
 }
 

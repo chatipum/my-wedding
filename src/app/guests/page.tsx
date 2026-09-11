@@ -12,7 +12,6 @@ export default async function GuestsPage() {
   return (
     <>
       <PageHeader title="แขก">
-        <span>ประมาณการ {counts.estimated} คน</span>
         <span>ยืนยันแล้ว {counts.confirmed} คน</span>
         <span>ยังไม่ตอบ {counts.pending} ราย</span>
         <span>
