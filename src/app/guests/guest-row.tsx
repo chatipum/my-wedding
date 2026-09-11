@@ -35,6 +35,7 @@ export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: nu
         <td className="flex gap-2">
           <Button
             variant="ghost"
+            className="btn-icon"
             aria-label={`แก้ไข ${guest.name}`}
             title={`แก้ไข ${guest.name}`}
             aria-expanded={isEditing}

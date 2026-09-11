@@ -20,6 +20,7 @@ export function ConfirmButton({
   return (
     <Button
       variant="danger"
+      className="btn-icon"
       aria-label={label}
       title={label}
       disabled={isPending}

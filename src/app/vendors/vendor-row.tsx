@@ -40,6 +40,7 @@ export function VendorRow({
         <td className="flex gap-2">
           <Button
             variant="ghost"
+            className="btn-icon"
             aria-label={`แก้ไข ${vendor.name}`}
             title={`แก้ไข ${vendor.name}`}
             aria-expanded={isEditing}
