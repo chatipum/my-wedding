@@ -46,6 +46,7 @@ export function ExpenseRow({
         <td className="flex gap-2">
           <Button
             variant="ghost"
+            className="btn-icon"
             aria-label={`แก้ไข ${row.name}`}
             title={`แก้ไข ${row.name}`}
             aria-expanded={isEditing}

@@ -3,7 +3,6 @@ import { DataTable } from '@/components/ui/data-table'
 import { Money } from '@/components/ui/money'
 import { PageHeader } from '@/components/ui/page-header'
 import { listEnvelopes } from '@/db/queries'
-import { todayIso } from '@/lib/date'
 import { sumEnvelopes } from '@/lib/totals'
 import { EnvelopeForm } from './envelope-form'
 import { EnvelopeRow } from './envelope-row'
@@ -21,15 +20,13 @@ export default async function EnvelopesPage() {
         <span>{rows.length} ซอง</span>
       </PageHeader>
 
-      <EnvelopeForm today={todayIso()} />
+      <EnvelopeForm />
 
       <Card>
         <DataTable
           caption="ซองที่รับมาแล้ว"
           columns={[
-            { key: 'giver', label: 'ผู้ให้' },
-            { key: 'received', label: 'วันที่รับ' },
-            { key: 'note', label: 'หมายเหตุ' },
+            { key: 'received', label: 'รับเมื่อ' },
             { key: 'amount', label: 'ยอด', numeric: true },
             { key: 'actions', label: '' },
           ]}
@@ -37,7 +34,7 @@ export default async function EnvelopesPage() {
           emptyMessage="ยังไม่มีซอง"
         >
           {rows.map((row) => (
-            <EnvelopeRow key={row.id} row={row} columnCount={5} />
+            <EnvelopeRow key={row.id} row={row} />
           ))}
         </DataTable>
       </Card>

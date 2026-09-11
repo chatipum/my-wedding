@@ -30,10 +30,6 @@ export async function createEnvelope(values: EnvelopeValues): Promise<void> {
   await db.insert(envelopes).values(values)
 }
 
-export async function updateEnvelope(id: number, values: EnvelopeValues): Promise<void> {
-  await db.update(envelopes).set(values).where(eq(envelopes.id, id))
-}
-
 export async function deleteEnvelope(id: number): Promise<void> {
   await db.delete(envelopes).where(eq(envelopes.id, id))
 }

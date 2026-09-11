@@ -105,65 +105,49 @@ describe('summarizeNet', () => {
 })
 
 describe('countGuests', () => {
-  it('ประมาณการนับทุกแถวที่ยังไม่ปฏิเสธ บวกผู้ติดตามที่คาดไว้', () => {
+  it('ยืนยันแล้วนับเฉพาะ rsvp=yes บวกผู้ติดตามที่ยืนยันแล้ว', () => {
     const counts = countGuests([
-      {
-        rsvp: 'pending',
-        companionsEstimated: 2,
-        companionsConfirmed: null,
-        invitationGiven: false,
-      },
-      { rsvp: 'yes', companionsEstimated: 1, companionsConfirmed: null, invitationGiven: false },
-      { rsvp: 'no', companionsEstimated: 3, companionsConfirmed: null, invitationGiven: false },
-    ])
-    expect(counts.estimated).toBe(5)
-  })
-
-  it('ยืนยันแล้วนับเฉพาะ rsvp=yes และใช้ confirmed ถ้ามี', () => {
-    const counts = countGuests([
-      { rsvp: 'yes', companionsEstimated: 2, companionsConfirmed: 0, invitationGiven: false },
-      { rsvp: 'yes', companionsEstimated: 1, companionsConfirmed: 3, invitationGiven: false },
-      {
-        rsvp: 'pending',
-        companionsEstimated: 5,
-        companionsConfirmed: null,
-        invitationGiven: false,
-      },
+      { rsvp: 'yes', companionsConfirmed: 0, invitationGiven: false },
+      { rsvp: 'yes', companionsConfirmed: 3, invitationGiven: false },
+      { rsvp: 'pending', companionsConfirmed: 5, invitationGiven: false },
     ])
     expect(counts.confirmed).toBe(5)
   })
 
-  it('companionsConfirmed เป็น null (ยังไม่ได้ถาม) ตกกลับไปใช้ค่าที่คาดไว้', () => {
+  it('companionsConfirmed เป็น null (ยังไม่ได้ถาม) นับแค่ตัวแขกเอง ไม่เดาผู้ติดตามให้', () => {
     expect(
-      countGuests([
-        { rsvp: 'yes', companionsEstimated: 2, companionsConfirmed: null, invitationGiven: false },
-      ]).confirmed,
-    ).toBe(3)
+      countGuests([{ rsvp: 'yes', companionsConfirmed: null, invitationGiven: false }]).confirmed,
+    ).toBe(1)
   })
 
-  it('confirmed = 0 ต่างจาก null — ถามแล้วมาคนเดียว', () => {
-    expect(
-      countGuests([
-        { rsvp: 'yes', companionsEstimated: 2, companionsConfirmed: 0, invitationGiven: false },
-      ]).confirmed,
-    ).toBe(1)
+  it('ถามแล้วมาคนเดียว (0) ได้ยอดเท่ากับยังไม่ถาม (null) — ต่างกันแค่ตอนแสดงผล', () => {
+    const asked = countGuests([{ rsvp: 'yes', companionsConfirmed: 0, invitationGiven: false }])
+    const notAsked = countGuests([
+      { rsvp: 'yes', companionsConfirmed: null, invitationGiven: false },
+    ])
+    expect(asked.confirmed).toBe(notAsked.confirmed)
+  })
+
+  it('confirmedRows นับเป็นแถว ไม่ใช่คน — เป็นตัวหารของคนเฉลี่ยต่อซอง', () => {
+    const counts = countGuests([
+      { rsvp: 'yes', companionsConfirmed: 3, invitationGiven: false },
+      { rsvp: 'yes', companionsConfirmed: null, invitationGiven: false },
+      { rsvp: 'pending', companionsConfirmed: null, invitationGiven: false },
+      { rsvp: 'no', companionsConfirmed: null, invitationGiven: false },
+    ])
+    expect(counts.confirmedRows).toBe(2)
+    expect(counts.confirmed).toBe(5)
+  })
+
+  it('ไม่มียอดประมาณการหลงเหลืออยู่ในผลนับ', () => {
+    expect(countGuests([])).not.toHaveProperty('estimated')
   })
 
   it('นับจำนวนคนที่ปฏิเสธและที่ยังไม่ตอบ', () => {
     const counts = countGuests([
-      { rsvp: 'no', companionsEstimated: 0, companionsConfirmed: null, invitationGiven: false },
-      {
-        rsvp: 'pending',
-        companionsEstimated: 0,
-        companionsConfirmed: null,
-        invitationGiven: false,
-      },
-      {
-        rsvp: 'pending',
-        companionsEstimated: 0,
-        companionsConfirmed: null,
-        invitationGiven: false,
-      },
+      { rsvp: 'no', companionsConfirmed: null, invitationGiven: false },
+      { rsvp: 'pending', companionsConfirmed: null, invitationGiven: false },
+      { rsvp: 'pending', companionsConfirmed: null, invitationGiven: false },
     ])
     expect(counts.declined).toBe(1)
     expect(counts.pending).toBe(2)
@@ -171,14 +155,9 @@ describe('countGuests', () => {
 
   it('นับซองที่แจกแล้ว รวมคนที่ตอบว่าไม่มาด้วย เพราะการ์ดถูกแจกไปแล้วจริง', () => {
     const counts = countGuests([
-      { rsvp: 'yes', companionsEstimated: 0, companionsConfirmed: null, invitationGiven: true },
-      { rsvp: 'no', companionsEstimated: 0, companionsConfirmed: null, invitationGiven: true },
-      {
-        rsvp: 'pending',
-        companionsEstimated: 0,
-        companionsConfirmed: null,
-        invitationGiven: false,
-      },
+      { rsvp: 'yes', companionsConfirmed: null, invitationGiven: true },
+      { rsvp: 'no', companionsConfirmed: null, invitationGiven: true },
+      { rsvp: 'pending', companionsConfirmed: null, invitationGiven: false },
     ])
     expect(counts.invitationsGiven).toBe(2)
   })
@@ -189,14 +168,9 @@ describe('countGuests', () => {
 
   it('total นับทุกแถว รวมคนที่ตอบว่าไม่มา — เป็นตัวหารของยอดแจกซอง', () => {
     const counts = countGuests([
-      { rsvp: 'yes', companionsEstimated: 3, companionsConfirmed: null, invitationGiven: true },
-      { rsvp: 'no', companionsEstimated: 0, companionsConfirmed: null, invitationGiven: true },
-      {
-        rsvp: 'pending',
-        companionsEstimated: 0,
-        companionsConfirmed: null,
-        invitationGiven: false,
-      },
+      { rsvp: 'yes', companionsConfirmed: 3, invitationGiven: true },
+      { rsvp: 'no', companionsConfirmed: null, invitationGiven: true },
+      { rsvp: 'pending', companionsConfirmed: null, invitationGiven: false },
     ])
     expect(counts.total).toBe(3)
   })
@@ -207,28 +181,24 @@ describe('countGuestsBySide', () => {
     {
       side: 'groom' as const,
       rsvp: 'yes' as const,
-      companionsEstimated: 1,
       companionsConfirmed: 2,
       invitationGiven: true,
     },
     {
       side: 'groom' as const,
       rsvp: 'pending' as const,
-      companionsEstimated: 3,
       companionsConfirmed: null,
       invitationGiven: false,
     },
     {
       side: 'bride' as const,
       rsvp: 'yes' as const,
-      companionsEstimated: 0,
       companionsConfirmed: null,
       invitationGiven: true,
     },
     {
       side: 'bride' as const,
       rsvp: 'no' as const,
-      companionsEstimated: 5,
       companionsConfirmed: null,
       invitationGiven: true,
     },
@@ -236,24 +206,23 @@ describe('countGuestsBySide', () => {
 
   it('แยกแถวเข้าฝั่งของตัวเอง แล้วนับด้วยกฎเดียวกับ countGuests', () => {
     const bySide = countGuestsBySide(rows)
-    expect(bySide.groom.estimated).toBe(6)
     expect(bySide.groom.confirmed).toBe(3)
-    expect(bySide.bride.estimated).toBe(1)
+    expect(bySide.groom.confirmedRows).toBe(1)
     expect(bySide.bride.confirmed).toBe(1)
   })
 
   it('สองฝั่งบวกกันแล้วเท่ากับนับรวมทั้งหมด', () => {
     const bySide = countGuestsBySide(rows)
     const all = countGuests(rows)
-    expect(bySide.groom.estimated + bySide.bride.estimated).toBe(all.estimated)
     expect(bySide.groom.confirmed + bySide.bride.confirmed).toBe(all.confirmed)
+    expect(bySide.groom.confirmedRows + bySide.bride.confirmedRows).toBe(all.confirmedRows)
     expect(bySide.groom.total + bySide.bride.total).toBe(all.total)
   })
 
   it('ฝั่งที่ไม่มีแขกเลยได้ตัวนับเป็นศูนย์ ไม่ใช่ค่าหาย', () => {
     const bySide = countGuestsBySide([rows[0]])
     expect(bySide.bride.total).toBe(0)
-    expect(bySide.bride.estimated).toBe(0)
+    expect(bySide.bride.confirmed).toBe(0)
   })
 })
 

@@ -81,7 +81,6 @@ export async function loadDashboard(): Promise<{
       .select({
         rsvp: guests.rsvp,
         side: guests.side,
-        companionsEstimated: guests.companionsEstimated,
         companionsConfirmed: guests.companionsConfirmed,
         invitationGiven: guests.invitationGiven,
       })

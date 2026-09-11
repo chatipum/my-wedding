@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { calculateBreakEven, DEFAULT_ENVELOPE_AMOUNT, GUEST_CAPACITY } from '@/lib/break-even'
 
-const NO_GUESTS = { estimated: 0, total: 0, declined: 0 }
+const NO_GUESTS = { confirmed: 0, confirmedRows: 0 }
 
 describe('calculateBreakEven', () => {
   it('ปัดจำนวนซองขึ้นเสมอ — ขาดอีกบาทเดียวก็ต้องเพิ่มอีกซอง', () => {
@@ -36,23 +36,23 @@ describe('calculateBreakEven', () => {
     const result = calculateBreakEven({
       totalExpense: 100_000,
       perEnvelope: 500,
-      guestCounts: { estimated: 300, total: 200, declined: 0 },
+      guestCounts: { confirmed: 300, confirmedRows: 200 },
     })
     expect(result?.peoplePerEnvelope).toBe(1.5)
     // 400 ÷ 1.5 = 266.67 — ปัดขึ้นแปลว่าเชิญเกินที่นั่ง
     expect(result?.envelopeCapacity).toBe(266)
   })
 
-  it('แถวที่ตอบว่าไม่มาไม่ถูกนับเป็นตัวหาร เพราะไม่ได้กินที่นั่ง', () => {
+  it('ตัวหารคือแถวที่ตอบว่ามาแล้วเท่านั้น คนที่ยังไม่ตอบไม่ถ่วงค่าเฉลี่ย', () => {
     const result = calculateBreakEven({
       totalExpense: 100_000,
       perEnvelope: 500,
-      guestCounts: { estimated: 300, total: 210, declined: 10 },
+      guestCounts: { confirmed: 30, confirmedRows: 20 },
     })
     expect(result?.peoplePerEnvelope).toBe(1.5)
   })
 
-  it('ยังไม่มีแขกในระบบ ถอยไปใช้ 1 คนต่อซอง ไม่ใช่หารด้วยศูนย์', () => {
+  it('ยังไม่มีใครตอบรับ ถอยไปใช้ 1 คนต่อซอง ไม่ใช่หารด้วยศูนย์', () => {
     const result = calculateBreakEven({
       totalExpense: 100_000,
       perEnvelope: 500,
@@ -62,11 +62,11 @@ describe('calculateBreakEven', () => {
     expect(result?.envelopeCapacity).toBe(GUEST_CAPACITY)
   })
 
-  it('ทุกแถวตอบว่าไม่มา ก็ยังถอยไปใช้ 1 คนต่อซอง', () => {
+  it('มีแถวตอบรับแต่ยังไม่ได้ถามผู้ติดตามเลย ได้ 1 คนต่อซองพอดี', () => {
     const result = calculateBreakEven({
       totalExpense: 100_000,
       perEnvelope: 500,
-      guestCounts: { estimated: 0, total: 12, declined: 12 },
+      guestCounts: { confirmed: 12, confirmedRows: 12 },
     })
     expect(result?.peoplePerEnvelope).toBe(1)
   })

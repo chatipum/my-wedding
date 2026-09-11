@@ -19,7 +19,7 @@ export function BreakEvenCard({
   totalExpense: number
   unknownCount: number
   envelopesReceived: number
-  guestCounts: Pick<GuestCounts, 'estimated' | 'total' | 'declined'>
+  guestCounts: Pick<GuestCounts, 'confirmed' | 'confirmedRows'>
 }) {
   const [perEnvelope, setPerEnvelope] = useState(String(DEFAULT_ENVELOPE_AMOUNT))
   const result = calculateBreakEven({

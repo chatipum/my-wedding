@@ -20,7 +20,6 @@ export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: nu
         <td>{guest.name}</td>
         <td>{guest.side === 'groom' ? 'เจ้าบ่าว' : 'เจ้าสาว'}</td>
         <td>{guest.group ?? '—'}</td>
-        <td className="num">{guest.companionsEstimated}</td>
         <td className="num">{guest.companionsConfirmed ?? 'ยังไม่ถาม'}</td>
         <td>
           <Badge status={rsvp.key}>{rsvp.label}</Badge>
@@ -35,6 +34,7 @@ export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: nu
         <td className="flex gap-2">
           <Button
             variant="ghost"
+            className="btn-icon"
             aria-label={`แก้ไข ${guest.name}`}
             title={`แก้ไข ${guest.name}`}
             aria-expanded={isEditing}

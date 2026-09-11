@@ -55,6 +55,13 @@
     color: var(--color-unpaid);
     border: 1px solid var(--color-unpaid);
   }
+  /** ปุ่ม icon ล้วน — บีบให้เป็นสี่เหลี่ยมพอดีตัว icon ไม่กินที่เท่าปุ่มมีข้อความ */
+  .btn-icon {
+    display: inline-grid;
+    place-items: center;
+    padding: 0.375rem;
+    line-height: 0;
+  }
   .btn[disabled] {
     opacity: 0.6;
     cursor: not-allowed;

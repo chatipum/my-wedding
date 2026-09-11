@@ -50,12 +50,6 @@ export default async function DashboardPage() {
         <Card>
           <h2 className="font-semibold mb-2">แขก</h2>
           <p>
-            ประมาณการ <strong>{guestCounts.estimated}</strong> คน
-            <span className="text-muted">
-              {' · '}เจ้าบ่าว {bySide.groom.estimated} · เจ้าสาว {bySide.bride.estimated}
-            </span>
-          </p>
-          <p>
             ยืนยันแล้ว <strong>{guestCounts.confirmed}</strong> คน
             <span className="text-muted">
               {' · '}เจ้าบ่าว {bySide.groom.confirmed} · เจ้าสาว {bySide.bride.confirmed}

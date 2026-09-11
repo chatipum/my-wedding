@@ -42,14 +42,6 @@ export const requiredInteger = (label: string) =>
     v.transform((s): number => Number(digits(s))),
   )
 
-/** จำนวนคน — ว่างเปล่าถือเป็น 0 (เช่น companionsEstimated) */
-export const countOrZero = v.pipe(
-  v.string(),
-  v.check(isValidDigits, 'ต้องเป็นจำนวนเต็มไม่ติดลบ'),
-  v.check(isWithinRange, 'ตัวเลขใหญ่เกินไป'),
-  v.transform((s): number => (digits(s) === '' ? 0 : Number(digits(s)))),
-)
-
 export const optionalId = v.pipe(
   v.string(),
   v.check((s) => s.trim() === '' || /^\d+$/.test(s.trim()), 'เลือกจากรายการเท่านั้น'),
