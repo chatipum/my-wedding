@@ -19,7 +19,7 @@ const COLUMNS = [
   { key: 'name', label: 'ชื่อ' },
   { key: 'side', label: 'ฝ่าย' },
   { key: 'group', label: 'กลุ่ม' },
-  { key: 'confirmed', label: 'ผู้ติดตามที่ยืนยันแล้ว', numeric: true },
+  { key: 'confirmed', label: 'ผู้ติดตาม', numeric: true },
   { key: 'rsvp', label: 'ตอบรับ' },
   { key: 'invitation', label: 'แจกซอง' },
   { key: 'actions', label: '' },
