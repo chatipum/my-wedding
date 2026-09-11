@@ -9,7 +9,8 @@ export function ConfirmButton({
   label,
   children,
 }: {
-  question: string
+  /** เว้นว่าง = ลบทันทีไม่ถาม — ใช้กับของที่กรอกใหม่ได้ในสองวินาที (ซองที่มีแค่ยอด) */
+  question?: string
   onConfirm: () => Promise<unknown>
   /** ปุ่มเป็น icon ล้วน — label คือชื่อที่ screen reader อ่านและ tooltip ตอน hover */
   label: string
@@ -25,8 +26,8 @@ export function ConfirmButton({
       title={label}
       disabled={isPending}
       onClick={() => {
-        // ไม่มี undo — confirm() คือด่านเดียว (ตัดสินใจไว้ในสเปคข้อ 8)
-        if (!window.confirm(question)) return
+        // ลบแล้วไม่มี undo — ถ้ามี question ให้ confirm() เป็นด่านเดียวก่อนลบ
+        if (question !== undefined && !window.confirm(question)) return
         startTransition(async () => {
           await onConfirm()
         })

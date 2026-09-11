@@ -12,7 +12,6 @@ export function DeleteEnvelopeButton({ id, label }: { id: number; label: string 
     <div className="flex flex-col gap-1">
       <ConfirmButton
         label={`ลบซอง ${label}`}
-        question={`ลบซอง ${label} ? ลบแล้วกู้คืนไม่ได้`}
         onConfirm={async () => {
           const result = await deleteEnvelopeAction({ id })
           setError(result.ok ? null : result.message)
