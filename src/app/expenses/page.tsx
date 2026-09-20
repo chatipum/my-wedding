@@ -4,19 +4,9 @@ import { Money } from '@/components/ui/money'
 import { PageHeader } from '@/components/ui/page-header'
 import { loadExpensesPage } from '@/db/queries'
 import { summarizeByCategory, summarizeExpenses } from '@/lib/totals'
+import { COLUMNS } from './columns'
 import { ExpenseForm } from './expense-form'
 import { ExpenseRow } from './expense-row'
-
-const COLUMNS = [
-  { key: 'paid', label: 'จ่ายแล้ว' },
-  { key: 'name', label: 'รายการ' },
-  { key: 'category', label: 'หมวด' },
-  { key: 'vendor', label: 'ผู้ให้บริการ' },
-  { key: 'due', label: 'กำหนดจ่าย' },
-  { key: 'amount', label: 'ยอด', numeric: true },
-  { key: 'status', label: 'สถานะ' },
-  { key: 'actions', label: '' },
-]
 
 export default async function ExpensesPage() {
   const { rows, vendorOptions } = await loadExpensesPage()
@@ -38,7 +28,7 @@ export default async function ExpensesPage() {
 
       <ExpenseForm vendorOptions={vendorOptions} />
 
-      <Card className="mb-6">
+      <Card className="card-flush mb-6">
         <DataTable
           caption="ค่าใช้จ่ายทั้งหมด"
           columns={COLUMNS}
@@ -59,6 +49,7 @@ export default async function ExpensesPage() {
       <Card>
         <DataTable
           caption="สรุปแยกหมวด"
+          mobile="scroll"
           columns={[
             { key: 'category', label: 'หมวด' },
             { key: 'count', label: 'รายการ', numeric: true },

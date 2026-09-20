@@ -8,6 +8,7 @@ import { PencilIcon } from '@/components/ui/icons'
 import { Money } from '@/components/ui/money'
 import type { ExpenseWithVendor, VendorOption } from '@/db/queries'
 import { paidStatus } from '@/lib/ui'
+import { Cell } from './columns'
 import { DeleteExpenseButton } from './delete-expense-button'
 import { ExpenseForm, toExpenseFormValues } from './expense-form'
 import { PaidToggle } from './paid-toggle'
@@ -28,22 +29,22 @@ export function ExpenseRow({
   return (
     <>
       <tr>
-        <td>
+        <Cell name="paid">
           <PaidToggle id={row.id} isPaid={row.isPaid} label={row.name} />
-        </td>
-        <td>{row.name}</td>
-        <td>{row.category ?? '—'}</td>
-        <td>{row.vendorName ?? '—'}</td>
-        <td>
+        </Cell>
+        <Cell name="name">{row.name}</Cell>
+        <Cell name="category">{row.category ?? '—'}</Cell>
+        <Cell name="vendor">{row.vendorName ?? '—'}</Cell>
+        <Cell name="due">
           <DateText value={row.dueDate} />
-        </td>
-        <td className="num">
+        </Cell>
+        <Cell name="amount">
           <Money value={row.amount} />
-        </td>
-        <td>
+        </Cell>
+        <Cell name="status">
           <Badge status={status.key}>{status.label}</Badge>
-        </td>
-        <td className="flex gap-2">
+        </Cell>
+        <Cell name="actions" className="flex gap-2">
           <Button
             variant="ghost"
             className="btn-icon"
@@ -55,7 +56,7 @@ export function ExpenseRow({
             <PencilIcon />
           </Button>
           <DeleteExpenseButton id={row.id} name={row.name} />
-        </td>
+        </Cell>
       </tr>
       {isEditing ? (
         <tr>
