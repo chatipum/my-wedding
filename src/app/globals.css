@@ -41,6 +41,9 @@
     padding: 0.5rem 1rem;
     font-weight: 500;
     cursor: pointer;
+    /** <button> ได้ text-align: center จาก UA แต่ <a> ที่ถูก blockify (เช่นในกริดตัวกรอง) ไม่ได้
+        ใส่ตรงนี้ให้ทั้งสองชนิด element จัดกึ่งกลางเหมือนกันทุกความกว้างจอ */
+    text-align: center;
   }
   .btn-primary {
     background: var(--color-accent);
@@ -66,18 +69,18 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
-  .table {
+  .data-table {
     width: 100%;
     border-collapse: collapse;
   }
-  .table th,
-  .table td {
+  .data-table th,
+  .data-table td {
     text-align: left;
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--color-border);
   }
-  .table td.num,
-  .table th.num {
+  .data-table td.num,
+  .data-table th.num {
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
@@ -90,5 +93,96 @@
   .field-error {
     color: var(--color-unpaid);
     font-size: 0.8125rem;
+  }
+}
+
+/**
+ * จอแคบกว่า 640px: 1 แถว = 1 การ์ด, 1 ช่อง = 1 บรรทัด "ป้าย: ค่า"
+ *
+ * ก้อนนี้ตั้งใจอยู่ "นอก" @layer components ห้ามย้ายกลับเข้าไปเพื่อความเป็นระเบียบ —
+ * tailwindcss ประกาศ @layer theme, base, components, utilities; ดังนั้น utility class ใดๆ
+ * (เช่น className ที่ผ่าน Cell เข้ามาอย่าง `flex`) จะชนะกฎใน @layer components เสมอไม่ว่า
+ * source order จะเป็นอย่างไร กฎนอก layer ไม่ผูกกับลำดับ layer พวกนี้เลยชนะทุก @layer รวม
+ * utilities ด้วย — นี่คือเหตุผลเดียวกับที่ .table-cards { display: block } เคยแพ้ .table
+ * utility ของ Tailwind แบบเงียบๆ มาก่อนแล้วรอบหนึ่ง
+ */
+@media (width < 40rem) {
+  .data-table-cards thead {
+    display: none;
+  }
+  .data-table-cards,
+  .data-table-cards tbody,
+  .data-table-cards tr,
+  .data-table-cards td {
+    display: block;
+  }
+  .data-table-cards tr {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .data-table-cards td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.25rem 0;
+    border-bottom: none;
+  }
+  /** ป้ายมาจาก data-label ที่ Cell ใส่ให้ — ป้ายว่าง (ช่องปุ่ม) ไม่ต้องขึ้น */
+  .data-table-cards td[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    color: var(--color-muted);
+    flex: none;
+  }
+  /** ช่องปุ่มไม่มีป้าย ถ้าปล่อย space-between ปุ่มแก้กับปุ่มลบจะแยกคนละมุมการ์ด */
+  .data-table-cards td[data-label=""] {
+    justify-content: flex-end;
+  }
+  .data-table-cards td.hide-sm {
+    display: none;
+  }
+
+  /**
+   * แถวฟอร์ม inline edit (<tr className="row-form">) ไม่ใช่แถวข้อมูล — ถ้าปล่อยให้โดนกฎ
+   * .data-table-cards tr ด้านบนจับ จะได้ขอบ/พื้นหลัง/padding ของการ์ดซ้อนกับขอบของ
+   * <Card> ที่ฟอร์มห่อตัวเองไว้อีกชั้น (ฟอร์มเลยแคบกว่าการ์ดที่ห่อมันจริง) จึงต้องถอดของ
+   * แถวการ์ดออกจากแถวฟอร์มเฉพาะ แล้วให้ td ของมันเป็น block เต็มความกว้างแทน flex
+   * shrink-to-fit เดิม
+   */
+  .data-table-cards tr.row-form {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin-bottom: 0;
+  }
+  .data-table-cards tr.row-form td {
+    display: block;
+    padding: 0;
+  }
+
+  /** การ์ดของแถวมีขอบของตัวเองแล้ว Card ชั้นนอกต้องถอยให้ ไม่งั้นขอบซ้อนขอบ */
+  .card-flush {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  /** ขยาย touch target เฉพาะมือถือ — บนจอใหญ่ยังย่อพอดี icon ตามเจตนาเดิม (d9f94fe) */
+  .btn-icon {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /**
+   * งานหลักบนมือถือคือ "เช็คว่าจ่ายอะไรไปแล้ว" (spec §2) ไม่ใช่การแก้/ลบ — checkbox
+   * จ่ายแล้ว/แจกซองแล้วจึงควรกดง่ายกว่า UA ขนาด ~13-16px เดิม เลยขยายเป็น touch target
+   * ที่ใช้งานสะดวก แม้จะไม่ถึง 44px เต็มเพราะเป็น checkbox ไม่ใช่ปุ่มแยก
+   */
+  .data-table-cards input[type="checkbox"] {
+    width: 1.5rem;
+    height: 1.5rem;
   }
 }
