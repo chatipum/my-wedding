@@ -1,0 +1,203 @@
+# Responsive บนมือถือ — Design Spec
+
+- วันที่: 2026-09-20
+- สถานะ: อนุมัติแล้ว พร้อมทำ implementation plan
+- แนวทางที่เลือก: แปลงตารางเป็นการ์ดด้วย CSS media query (ไม่ใช้ hook + conditional render)
+
+---
+
+## 1. ปัญหา
+
+แอปตอนนี้แทบไม่ responsive ฟอร์มกับการ์ดหน้าภาพรวมมี `sm:grid-cols-*` อยู่แล้ว แต่ที่เหลือพังบนจอแคบ:
+
+- `src/components/ui/data-table.tsx` — ไม่มี wrapper scroll เลย หน้าค่าใช้จ่าย 8 คอลัมน์ หน้าผู้ให้บริการ 9 คอลัมน์ หน้าแขก 7 คอลัมน์ บนจอ 390px ล้นออกนอกจอทั้งหน้า
+- `src/app/guests/guest-table.tsx` — แถวตัวกรอง 5 select + 2 ปุ่ม เป็น `flex-wrap` กับความกว้างตายตัว และ `ml-auto` เพี้ยนบนจอแคบ
+- `src/components/nav.tsx` — เมนู 5 อัน `flex-wrap` ตกบรรทัดแบบไม่ได้ตั้งใจ
+- `src/app/layout.tsx` — `py-6` คงที่
+- `globals.css` — `.btn-icon` ได้ touch target ราว 28px เล็กกว่าเกณฑ์ 44px
+
+## 2. ผู้ใช้และสถานการณ์
+
+ใช้ตอน **เตรียมงาน** ไม่ใช่ตอนงานจริง — นั่งเล่นมือถือตอนว่าง ดูยอด เช็คว่าจ่ายอะไรไปแล้ว เพิ่มรายการเป็นครั้งคราว
+
+**หน้าที่สำคัญที่สุด:** ภาพรวม และ ค่าใช้จ่าย
+
+ผลต่อการออกแบบ: ไม่ต้องออกแบบเพื่อความเร็วแบบยืนหน้างาน ไม่ต้องมี bottom tab bar ไม่ต้องขยายปุ่มจนผิดสัดส่วน
+
+## 3. แนวทางที่เลือกและที่ไม่เลือก
+
+### เลือก: แปลงด้วย CSS + ป้ายมาจาก `COLUMNS` ที่เดียว
+
+คง `<table>` ไว้ทั้งหมด ใช้ CSS ต่ำกว่า 640px แปลง `tr` เป็นการ์ดและ `td` เป็นบรรทัด "ป้าย: ค่า" โดยป้ายมาจาก `data-label` ที่ `::before` และทั้ง `data-label` กับการซ่อนคอลัมน์ถูกสร้างจาก `COLUMNS` ของตารางนั้นผ่านตัวช่วย `<Cell>` — ไม่มีการพิมพ์ป้ายซ้ำด้วยมือ
+
+### ไม่เลือก: hook (`useBreakpoint`) + conditional render
+
+ผู้ใช้เสนอและพิจารณาแล้ว เหตุผลที่ไม่เอา:
+
+1. hook ต้องใช้ `window.matchMedia` → `data-table.tsx` (ตอนนี้เป็น Server Component) ต้องกลายเป็น `'use client'` และทุกอย่างที่มัน import ตกเข้า client bundle ตามไปด้วย
+2. หนักกว่าคือ ตอน render บน server ไม่มีความกว้างจอ server ต้องเดาแล้วแก้หลัง hydrate ผลคือบนมือถือเห็นตารางล้นจอแวบหนึ่งแล้วกระตุกกลายเป็นการ์ด ซึ่งคือสิ่งที่งานนี้กำลังแก้พอดี ทางเลี่ยงมีแต่ที่แลกมาด้วยของอื่น (หน้าขาวแวบ หรือ inline script + `suppressHydrationWarning`)
+
+CSS media query ถูกตั้งแต่ paint แรก ไม่ต้องรอ JS ไม่โตใน bundle
+
+ข้อดีจริงของ hook คือฟิลด์ที่ตัดจะไม่ลง DOM เลย แต่กับแอปนี้ (ไม่กี่ร้อยแถว ไม่มี login) ไม่ได้ประหยัดอะไรที่รู้สึกได้ hook จะคุ้มตอนที่มือถือกับ desktop ต้องใช้คนละ component ซึ่งไม่ใช่เคสนี้
+
+### ไม่เลือก: รื้อ `DataTable` ให้ render `<table>` กับ `<ul>` แยกกัน
+
+ต้องรื้อ row component ทั้ง 4 ตัวรวมถึงกลไก inline edit ที่อาศัย `<tr><td colSpan>` ซึ่งมีคอมเมนต์กำกับเจตนาไว้ชัดใน `expense-row.tsx` ว่า "ไม่ใช้ modal — ตารางยังเป็นตารางจริง" และได้ markup สองชุดที่ต้องอัปเดตคู่กัน
+
+## 4. สัญญาของ `DataTable`
+
+`Column` เพิ่มฟิลด์เดียว:
+
+```ts
+export type Column = {
+  key: string
+  label: string
+  numeric?: boolean
+  hideOnMobile?: boolean   // ← ใหม่
+}
+```
+
+`DataTable` รับ prop ใหม่ `mobile: 'cards' | 'scroll'` ค่าตั้งต้น `'cards'` และห่อตารางด้วย `<div>` เสมอ แบบ `'scroll'` ใส่ `overflow-x: auto` ที่ div นั้น
+
+ตัวช่วยสร้าง cell ผูกกับ `COLUMNS` ของตารางนั้น:
+
+```tsx
+// เดิม
+<td>{row.name}</td>
+<td className="num"><Money value={row.amount} /></td>
+
+// ใหม่
+<Cell name="name">{row.name}</Cell>
+<Cell name="amount"><Money value={row.amount} /></Cell>
+```
+
+`name` เป็น union type จาก key จริง พิมพ์ผิด TypeScript ฟ้อง row component ไม่ต้องรู้เรื่องป้ายหรือการซ่อน
+
+### `COLUMNS` ต้องย้ายออกมาเป็นไฟล์ของตัวเอง
+
+ตอนนี้ `COLUMNS` ของค่าใช้จ่ายอยู่ใน `expenses/page.tsx` ซึ่ง import `loadExpensesPage` ถ้า `expense-row.tsx` (client) import จากไฟล์นั้นจะลาก db query เข้า client bundle จึงต้องแยกเป็น `columns.ts` ต่อหน้า:
+
+- `src/app/expenses/columns.ts`
+- `src/app/guests/columns.ts`
+- `src/app/vendors/columns.ts`
+- `src/app/envelopes/columns.ts`
+
+แต่ละไฟล์ export `COLUMNS` และ `Cell` ผลพลอยได้คือเปิดไฟล์เดียวแล้วรู้ว่าตารางนั้นบนมือถือแสดงอะไร
+
+## 5. CSS ที่แปลงตารางเป็นการ์ด
+
+จุดตัด **640px** (`40rem`, ตรงกับ `sm` ของ Tailwind) เขียนเป็น CSS ธรรมดาใน `globals.css` เพราะเป็นการแปลงโครงทั้งตาราง ไม่ใช่ utility รายตัว
+
+```css
+@media (width < 40rem) {
+  .table-cards thead { display: none; }
+  .table-cards, .table-cards tbody,
+  .table-cards tr, .table-cards td { display: block; }
+
+  .table-cards tr {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .table-cards td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.25rem 0;
+    border-bottom: none;
+  }
+
+  .table-cards td[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    color: var(--color-muted);
+    flex: none;
+  }
+
+  .table-cards td.hide-sm { display: none; }
+}
+```
+
+จุดที่ต้องจัดการเป็นพิเศษ:
+
+1. **ช่องปุ่มแก้-ลบ** ป้ายว่าง (`label: ''`) ถ้าปล่อยไว้ `space-between` จะดันปุ่มแก้กับปุ่มลบไปคนละมุมการ์ด → ช่องที่ป้ายว่างให้ `justify-content: flex-end`
+2. **แถวฟอร์ม inline edit** `<tr><td colSpan={n}>` กลายเป็นการ์ดของตัวเองต่อท้ายการ์ดแถวนั้น ใช้ได้เลยไม่ต้องรื้อ เพราะ `<td>` นั้นไม่มี `data-label` จึงไม่ขึ้นป้าย
+3. **`caption`** ยังแสดงเหมือนเดิม ไม่ต้องแก้
+
+### ข้อแลกเปลี่ยนที่รับทราบแล้ว
+
+`display: block` บน `<table>` ทำให้ screen reader ไม่เห็นความเป็นตารางบนจอเล็ก แลกมากับการที่ทุกค่ามีป้ายกำกับติดตัว (`ยอด 12,000`) ซึ่งอ่านรู้เรื่องกว่าตารางล้นจอ เจ้าของงานรับทราบและเลือกแบบนี้
+
+## 6. คอลัมน์รายหน้า
+
+| ตาราง | โหมดมือถือ | ซ่อนบนมือถือ | เหลือบนการ์ด |
+|---|---|---|---|
+| ค่าใช้จ่าย | cards | หมวด, ผู้ให้บริการ, กำหนดจ่าย | จ่ายแล้ว, รายการ, ยอด, สถานะ, ปุ่ม |
+| แขก | cards | ฝ่าย | ชื่อ, กลุ่ม, ผู้ติดตาม, ตอบรับ, แจกซอง, ปุ่ม |
+| ผู้ให้บริการ | cards | ราคาที่ตกลง, LINE, ยังไม่ระบุยอด | ผู้ให้บริการ, หน้าที่, เบอร์โทร, จ่ายแล้ว, ค้างจ่าย, ปุ่ม |
+| ซองรับ | cards | — | รับเมื่อ, ยอด, ปุ่ม |
+| สรุปแยกหมวด | scroll | — | เลื่อนแนวนอน 6 คอลัมน์เหมือนเดิม |
+
+หมายเหตุการตัดสินใจ:
+
+- **หน้าผู้ให้บริการเก็บเบอร์โทรไว้บนมือถือ** เพราะ `vendor-row.tsx` render เป็น `<a href="tel:...">` ซึ่งมือถือคือที่เดียวที่ลิงก์นั้นมีประโยชน์จริง จึงซ่อน "ราคาที่ตกลง" แทน
+- **หน้าแขกซ่อนฝ่ายทั้งที่ตัวกรองยังกรองตามฝ่ายได้** รับทราบว่ากรองแล้วจะไม่เห็นค่าที่กรองอยู่บนการ์ด ตัวกรองยังบอกอยู่ว่าเลือกอะไร จึงยอมรับได้
+- **ตารางสรุปแยกหมวดเป็นตารางเดียวที่เลื่อนแนวนอน** เพราะเป็นตัวเลขสั้นทั้งแถวและมีไม่กี่แถว
+
+## 7. ของรอบๆ ตาราง
+
+**เมนู (`nav.tsx`)** — `flex-wrap` เป็น `flex-nowrap overflow-x-auto` ลิงก์ใส่ `whitespace-nowrap` บนจอ ≥640px เมนู 5 อันไม่เคยล้นอยู่แล้ว จึงไม่มีอะไรเปลี่ยน ยังเป็น Server Component ไม่เพิ่ม state
+
+**แถวตัวกรองหน้าแขก (`guest-table.tsx`)** — เป็น `grid gap-3 sm:flex sm:flex-wrap` บนมือถือทุกช่องเต็มความกว้างเรียงลงมา (`max-w-*` มีผลเฉพาะ `sm:` ขึ้นไป) และ `ml-auto` ของปุ่มล้างตัวกรองเป็น `sm:ml-auto`
+
+**การ์ดซ้อนการ์ด** — ตารางทุกตัวอยู่ใน `<Card>` ที่มีขอบ+พื้นหลัง+padding ของตัวเอง เพิ่มคลาส `card-flush` ที่หน้าซึ่งห่อตาราง cards ส่งเข้าไป (`Card` รับ `className` อยู่แล้ว) ต่ำกว่า 640px คลาสนี้ถอดขอบ/พื้นหลัง/padding ออก บนจอใหญ่ไม่มีผล
+
+**ขนาดปุ่ม** — `.btn-icon` ขยายเป็น 44px **เฉพาะใน media query มือถือ** ไม่แตะค่าบนจอใหญ่ เพราะ commit `d9f94fe` ตั้งใจย่อไว้ ("ปุ่ม icon ล้วนย่อให้พอดีตัว icon ไม่กินที่เท่าปุ่มมีข้อความ") เจตนานั้นยังอยู่ครบบน desktop
+
+**`layout.tsx`** — `px-4` (16px) พอดีอยู่แล้วไม่แตะ ปรับ `py-6` เป็น `py-4 sm:py-6`
+
+**ไม่ต้องแตะ** — ฟอร์มทั้ง 4 ตัวและ `import-guests` มี `sm:grid-cols-*` อยู่แล้ว · `PageHeader` เป็น `flex-wrap` อยู่แล้ว · `.input` ไม่กำหนด font-size จึงสืบทอด 16px ซึ่งพอดีกับเกณฑ์ที่ iOS ไม่ซูมตอนกดช่องกรอก
+
+## 8. การเทส
+
+เทสที่มีอยู่ทั้ง 7 ไฟล์อยู่ใน `src/lib/` เป็นฟังก์ชันล้วน ไม่มี component test ไม่มี React Testing Library ในโปรเจกต์ งานนี้ไม่ฝืนเพิ่มเข้ามา
+
+**ที่เทสได้** — logic เดียวคือการแปลง `COLUMNS` เป็น attribute ของ `<td>` แยกเป็นฟังก์ชันล้วน `cellAttributes(columns, key)` คืน `{ 'data-label', className }` เทสที่ `src/components/ui/data-table.test.ts` (ข้างไฟล์ ตามที่ใช้กันอยู่) เขียนแบบ TDD เทสก่อน implement ทีหลัง เคส:
+
+- คอลัมน์ปกติ → `data-label` เป็น label ของมัน
+- `numeric: true` → ได้คลาส `num`
+- `hideOnMobile: true` → ได้คลาส `hide-sm`
+- คอลัมน์ปุ่ม (`label: ''`) → `data-label` ว่าง ไม่ขึ้นป้ายบนการ์ด
+- key ที่ไม่มีใน columns → โยน error (TypeScript กันชั้นแรกแล้ว อันนี้กันพลาดชั้นสอง)
+
+**ที่เทสไม่ได้** — ทุกอย่างในหัวข้อ 5 และ 7 เป็น CSS ล้วน `bun test` แตะไม่ถึง **เทสผ่านครบไม่ได้แปลว่าหน้าจอไม่พัง** ห้ามเคลมว่า responsive แล้วโดยอ้างผลเทส
+
+## 9. การตรวจว่าเสร็จจริง
+
+1. `bun run dev` เปิด DevTools ตั้งความกว้าง **390px** ไล่ทั้ง 5 หน้า
+2. เช็ค: ไม่มี scroll แนวนอนของทั้งหน้า · การ์ดมีป้ายกำกับครบ · ฟิลด์ที่สั่งซ่อนหายจริง · กดปุ่มแก้แล้วฟอร์มกางใต้การ์ดถูกใบ · เมนูเลื่อนได้ · ตารางสรุปแยกหมวดเลื่อนแนวนอนได้แต่หน้าไม่เลื่อนตาม
+3. เช็คที่ **640px และ 641px** ให้แน่ใจว่าไม่มีสถานะกลางที่พัง
+4. `bun run lint` และ `bun run build` ผ่าน
+
+รายงานตามที่เห็นจริง ข้อไหนไม่ได้ทำให้บอกว่าไม่ได้ทำ
+
+## 10. ลำดับการทำ
+
+แต่ละกลุ่มจบแล้วหยุดให้ตรวจ
+
+1. `cellAttributes` + เทส + `createCell` + `Column.hideOnMobile`
+2. แยก `columns.ts` 4 ไฟล์ + แปลง `<td>` เป็น `<Cell>` ใน 4 row component
+3. CSS การ์ด + prop `mobile` ใน `DataTable`
+4. ของรอบๆ (เมนู, ตัวกรอง, `card-flush`, ปุ่ม, layout)
+5. ตรวจด้วยตาที่ 390 / 640 / 641px
+
+## 11. ไม่อยู่ในขอบเขต
+
+- ไม่ทำ bottom tab bar หรือเมนูแฮมเบอร์เกอร์
+- ไม่เพิ่ม `useBreakpoint` hook หรือ conditional render ตาม viewport
+- ไม่รื้อ `DataTable` เป็น render สองชุด
+- ไม่แตะฟอร์มและ `import-guests` ซึ่ง responsive อยู่แล้ว
+- ไม่ทำ dark mode ไม่ทำ PWA ไม่ทำ offline
