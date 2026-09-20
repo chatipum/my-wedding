@@ -4,6 +4,7 @@ import { listGuests } from '@/db/queries'
 import { countGuests } from '@/lib/totals'
 import { GuestForm } from './guest-form'
 import { GuestTable } from './guest-table'
+import { ImportGuests } from './import-guests'
 
 export default async function GuestsPage() {
   const guests = await listGuests()
@@ -20,6 +21,8 @@ export default async function GuestsPage() {
       </PageHeader>
 
       <GuestForm />
+
+      <ImportGuests existingNames={guests.map((guest) => guest.name)} />
 
       <Card>
         <GuestTable guests={guests} />

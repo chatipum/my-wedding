@@ -21,5 +21,15 @@ export const guestUpdateSchema = v.object({ id: idNumber, ...guestInputSchema.en
  */
 export const toggleInvitationSchema = v.object({ id: idNumber, invitationGiven: v.boolean() })
 
+/**
+ * นำเข้าจาก Excel: ไฟล์ให้มาแค่ชื่อ ฝ่ายกับกลุ่มเลือกบนหน้าจอครั้งเดียวใช้กับทุกแถว
+ * แขกที่ import ถือว่าตอบรับแล้วและมาคนเดียว (rsvp/ผู้ติดตามจึงไม่ได้อยู่ในนี้ — ดู importGuestsAction)
+ */
+export const guestImportSchema = v.object({
+  names: v.pipe(v.array(requiredText('ชื่อแขก')), v.minLength(1, 'เลือกอย่างน้อย 1 ชื่อ')),
+  side: sideSchema,
+  group: optionalText,
+})
+
 export type GuestInput = v.InferInput<typeof guestInputSchema>
 export type GuestValues = v.InferOutput<typeof guestInputSchema>
