@@ -45,28 +45,33 @@ export function DataTable({
   children,
   isEmpty,
   emptyMessage = 'ยังไม่มีข้อมูล',
+  mobile = 'cards',
 }: {
   caption: string
   columns: readonly Column[]
   children: React.ReactNode
   isEmpty: boolean
   emptyMessage?: string
+  /** cards = ยุบเป็นการ์ดต่อแถวบนจอแคบ · scroll = คงตารางไว้ให้เลื่อนแนวนอน */
+  mobile?: 'cards' | 'scroll'
 }) {
   if (isEmpty) return <EmptyState message={emptyMessage} />
 
   return (
-    <table className="table">
-      <caption className="text-muted text-left text-sm mb-2">{caption}</caption>
-      <thead>
-        <tr>
-          {columns.map((column) => (
-            <th key={column.key} scope="col" className={cn(column.numeric && 'num')}>
-              {column.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>{children}</tbody>
-    </table>
+    <div className={cn(mobile === 'scroll' && 'overflow-x-auto')}>
+      <table className={cn('table', mobile === 'cards' && 'table-cards')}>
+        <caption className="text-muted text-left text-sm mb-2">{caption}</caption>
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th key={column.key} scope="col" className={cn(column.numeric && 'num')}>
+                {column.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
   )
 }

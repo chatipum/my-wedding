@@ -91,4 +91,58 @@
     color: var(--color-unpaid);
     font-size: 0.8125rem;
   }
+
+  /** จอแคบกว่า 640px: 1 แถว = 1 การ์ด, 1 ช่อง = 1 บรรทัด "ป้าย: ค่า" */
+  @media (width < 40rem) {
+    .table-cards thead {
+      display: none;
+    }
+    .table-cards,
+    .table-cards tbody,
+    .table-cards tr,
+    .table-cards td {
+      display: block;
+    }
+    .table-cards tr {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-card);
+      padding: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .table-cards td {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.25rem 0;
+      border-bottom: none;
+    }
+    /** ป้ายมาจาก data-label ที่ Cell ใส่ให้ — ป้ายว่าง (ช่องปุ่ม) ไม่ต้องขึ้น */
+    .table-cards td[data-label]:not([data-label=""])::before {
+      content: attr(data-label);
+      color: var(--color-muted);
+      flex: none;
+    }
+    /** ช่องปุ่มไม่มีป้าย ถ้าปล่อย space-between ปุ่มแก้กับปุ่มลบจะแยกคนละมุมการ์ด */
+    .table-cards td[data-label=""] {
+      justify-content: flex-end;
+    }
+    .table-cards td.hide-sm {
+      display: none;
+    }
+
+    /** การ์ดของแถวมีขอบของตัวเองแล้ว Card ชั้นนอกต้องถอยให้ ไม่งั้นขอบซ้อนขอบ */
+    .card-flush {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+    }
+
+    /** ขยาย touch target เฉพาะมือถือ — บนจอใหญ่ยังย่อพอดี icon ตามเจตนาเดิม (d9f94fe) */
+    .btn-icon {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
 }
