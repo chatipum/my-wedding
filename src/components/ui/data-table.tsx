@@ -1,7 +1,43 @@
 import { cn } from '@/lib/cn'
 import { EmptyState } from './empty-state'
 
-export type Column = { key: string; label: string; numeric?: boolean }
+export type Column<K extends string = string> = {
+  key: K
+  label: string
+  numeric?: boolean
+  hideOnMobile?: boolean
+}
+
+/** ป้ายบนการ์ดกับการซ่อนคอลัมน์มาจาก COLUMNS ที่เดียว row component ไม่ต้องรู้เรื่องนี้ */
+export function cellAttributes(columns: readonly Column[], key: string) {
+  const column = columns.find((candidate) => candidate.key === key)
+  if (!column) throw new Error(`ไม่มีคอลัมน์ "${key}" ในตารางนี้`)
+
+  return {
+    'data-label': column.label,
+    className: cn(column.numeric && 'num', column.hideOnMobile && 'hide-sm') || undefined,
+  }
+}
+
+/** ผูก Cell เข้ากับ COLUMNS ของตารางหนึ่ง — name จึงเป็น union ของ key จริง พิมพ์ผิด TS ฟ้อง */
+export function createCell<K extends string>(columns: readonly Column<K>[]) {
+  return function Cell({
+    name,
+    className,
+    children,
+  }: {
+    name: K
+    className?: string
+    children?: React.ReactNode
+  }) {
+    const { className: columnClass, ...rest } = cellAttributes(columns, name)
+    return (
+      <td {...rest} className={cn(columnClass, className)}>
+        {children}
+      </td>
+    )
+  }
+}
 
 export function DataTable({
   caption,
@@ -11,7 +47,7 @@ export function DataTable({
   emptyMessage = 'ยังไม่มีข้อมูล',
 }: {
   caption: string
-  columns: Column[]
+  columns: readonly Column[]
   children: React.ReactNode
   isEmpty: boolean
   emptyMessage?: string
