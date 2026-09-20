@@ -55,7 +55,7 @@ export function VendorRow({
         </Cell>
       </tr>
       {isEditing ? (
-        <tr>
+        <tr className="row-form">
           <td colSpan={columnCount}>
             <VendorForm initial={toVendorFormValues(vendor)} onDone={() => setIsEditing(false)} />
           </td>

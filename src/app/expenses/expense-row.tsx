@@ -59,7 +59,7 @@ export function ExpenseRow({
         </Cell>
       </tr>
       {isEditing ? (
-        <tr>
+        <tr className="row-form">
           <td colSpan={columnCount}>
             <ExpenseForm
               vendorOptions={vendorOptions}

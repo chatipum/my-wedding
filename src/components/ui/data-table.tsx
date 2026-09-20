@@ -5,6 +5,7 @@ export type Column<K extends string = string> = {
   key: K
   label: string
   numeric?: boolean
+  /** มีผลเฉพาะตอน DataTable ใช้ mobile='cards' (ค่าตั้งต้น) — โหมด 'scroll' ไม่มี CSS อ่านคลาสนี้ */
   hideOnMobile?: boolean
 }
 
@@ -59,7 +60,7 @@ export function DataTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className={cn('data-table', mobile === 'cards' && 'table-cards')}>
+      <table className={cn('data-table', mobile === 'cards' && 'data-table-cards')}>
         <caption className="text-muted text-left text-sm mb-2">{caption}</caption>
         <thead>
           <tr>

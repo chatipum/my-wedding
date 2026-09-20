@@ -47,7 +47,7 @@ export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: nu
         </Cell>
       </tr>
       {isEditing ? (
-        <tr>
+        <tr className="row-form">
           <td colSpan={columnCount}>
             <GuestForm initial={toGuestFormValues(guest)} onDone={() => setIsEditing(false)} />
           </td>
