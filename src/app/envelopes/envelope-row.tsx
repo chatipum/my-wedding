@@ -2,6 +2,7 @@ import { Money } from '@/components/ui/money'
 import type { Envelope } from '@/db/schema'
 import { formatThaiDateTime } from '@/lib/date'
 import { formatBaht } from '@/lib/money'
+import { Cell } from './columns'
 import { DeleteEnvelopeButton } from './delete-envelope-button'
 
 export function EnvelopeRow({ row }: { row: Envelope }) {
@@ -9,15 +10,15 @@ export function EnvelopeRow({ row }: { row: Envelope }) {
 
   return (
     <tr>
-      <td>
+      <Cell name="received">
         <time dateTime={row.createdAt.toISOString()}>{receivedAt}</time>
-      </td>
-      <td className="num">
+      </Cell>
+      <Cell name="amount">
         <Money value={row.amount} />
-      </td>
-      <td>
+      </Cell>
+      <Cell name="actions">
         <DeleteEnvelopeButton id={row.id} label={`${formatBaht(row.amount)} รับเมื่อ ${receivedAt}`} />
-      </td>
+      </Cell>
     </tr>
   )
 }

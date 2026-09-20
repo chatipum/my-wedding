@@ -4,6 +4,7 @@ import { Money } from '@/components/ui/money'
 import { PageHeader } from '@/components/ui/page-header'
 import { listEnvelopes } from '@/db/queries'
 import { sumEnvelopes } from '@/lib/totals'
+import { COLUMNS } from './columns'
 import { EnvelopeForm } from './envelope-form'
 import { EnvelopeRow } from './envelope-row'
 
@@ -22,14 +23,10 @@ export default async function EnvelopesPage() {
 
       <EnvelopeForm />
 
-      <Card>
+      <Card className="card-flush">
         <DataTable
           caption="ซองที่รับมาแล้ว"
-          columns={[
-            { key: 'received', label: 'รับเมื่อ' },
-            { key: 'amount', label: 'ยอด', numeric: true },
-            { key: 'actions', label: '' },
-          ]}
+          columns={COLUMNS}
           isEmpty={rows.length === 0}
           emptyMessage="ยังไม่มีซอง"
         >
