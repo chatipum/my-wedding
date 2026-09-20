@@ -52,14 +52,14 @@ export function DataTable({
   children: React.ReactNode
   isEmpty: boolean
   emptyMessage?: string
-  /** cards = ยุบเป็นการ์ดต่อแถวบนจอแคบ · scroll = คงตารางไว้ให้เลื่อนแนวนอน */
+  /** cards = ยุบเป็นการ์ดต่อแถวบนจอแคบ · scroll = คงตารางไว้เหมือนเดิมทุกขนาดจอ */
   mobile?: 'cards' | 'scroll'
 }) {
   if (isEmpty) return <EmptyState message={emptyMessage} />
 
   return (
-    <div className={cn(mobile === 'scroll' && 'overflow-x-auto')}>
-      <table className={cn('table', mobile === 'cards' && 'table-cards')}>
+    <div className="overflow-x-auto">
+      <table className={cn('data-table', mobile === 'cards' && 'table-cards')}>
         <caption className="text-muted text-left text-sm mb-2">{caption}</caption>
         <thead>
           <tr>
