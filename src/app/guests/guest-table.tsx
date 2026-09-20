@@ -13,17 +13,8 @@ import {
   toSearchParams,
 } from '@/lib/guest-filter'
 import { countGuests } from '@/lib/totals'
+import { COLUMNS } from './columns'
 import { GuestRow } from './guest-row'
-
-const COLUMNS = [
-  { key: 'name', label: 'ชื่อ' },
-  { key: 'side', label: 'ฝ่าย' },
-  { key: 'group', label: 'กลุ่ม' },
-  { key: 'confirmed', label: 'ผู้ติดตาม', numeric: true },
-  { key: 'rsvp', label: 'ตอบรับ' },
-  { key: 'invitation', label: 'แจกซอง' },
-  { key: 'actions', label: '' },
-]
 
 export function GuestTable({ guests }: { guests: Guest[] }) {
   const [filter, setFilter] = useState<GuestFilter>(EMPTY_GUEST_FILTER)
@@ -49,9 +40,9 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
 
   return (
     <>
-      <div className="flex flex-wrap gap-3 mb-4">
+      <div className="grid gap-3 sm:flex sm:flex-wrap mb-4">
         <input
-          className="input max-w-xs"
+          className="input sm:max-w-xs"
           type="search"
           placeholder="ค้นหาชื่อ / กลุ่ม / หมายเหตุ"
           aria-label="ค้นหาชื่อ / กลุ่ม / หมายเหตุ"
@@ -59,7 +50,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
           onChange={(event) => update('keyword', event.target.value)}
         />
         <select
-          className="input max-w-40"
+          className="input sm:max-w-40"
           aria-label="กรองตามฝ่าย"
           value={filter.side}
           onChange={(e) => update('side', e.target.value as Side | '')}
@@ -69,7 +60,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
           <option value="bride">เจ้าสาว</option>
         </select>
         <select
-          className="input max-w-40"
+          className="input sm:max-w-40"
           aria-label="กรองตามกลุ่ม"
           value={filter.group}
           onChange={(e) => update('group', e.target.value)}
@@ -82,7 +73,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
           ))}
         </select>
         <select
-          className="input max-w-40"
+          className="input sm:max-w-40"
           aria-label="กรองตามการตอบรับ"
           value={filter.rsvp}
           onChange={(e) => update('rsvp', e.target.value as Rsvp | '')}
@@ -93,7 +84,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
           <option value="no">ไม่มา</option>
         </select>
         <select
-          className="input max-w-40"
+          className="input sm:max-w-40"
           aria-label="กรองตามการแจกซอง"
           value={filter.invitation}
           onChange={(e) => update('invitation', e.target.value as InvitationFilter | '')}
@@ -105,7 +96,7 @@ export function GuestTable({ guests }: { guests: Guest[] }) {
 
         <Button
           variant="ghost"
-          className="ml-auto"
+          className="sm:ml-auto"
           disabled={!isGuestFilterActive(filter)}
           onClick={() => setFilter(EMPTY_GUEST_FILTER)}
         >

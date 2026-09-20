@@ -24,7 +24,7 @@ export default async function GuestsPage() {
 
       <ImportGuests existingNames={guests.map((guest) => guest.name)} />
 
-      <Card>
+      <Card className="card-flush">
         <GuestTable guests={guests} />
       </Card>
     </>

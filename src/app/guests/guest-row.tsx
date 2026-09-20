@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { PencilIcon } from '@/components/ui/icons'
 import type { Guest } from '@/db/schema'
 import { rsvpStatus } from '@/lib/ui'
+import { Cell } from './columns'
 import { DeleteGuestButton } from './delete-guest-button'
 import { GuestForm, toGuestFormValues } from './guest-form'
 import { InvitationToggle } from './invitation-toggle'
@@ -17,21 +18,21 @@ export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: nu
   return (
     <>
       <tr>
-        <td>{guest.name}</td>
-        <td>{guest.side === 'groom' ? 'เจ้าบ่าว' : 'เจ้าสาว'}</td>
-        <td>{guest.group ?? '—'}</td>
-        <td className="num">{guest.companionsConfirmed ?? 'ยังไม่ถาม'}</td>
-        <td>
+        <Cell name="name">{guest.name}</Cell>
+        <Cell name="side">{guest.side === 'groom' ? 'เจ้าบ่าว' : 'เจ้าสาว'}</Cell>
+        <Cell name="group">{guest.group ?? '—'}</Cell>
+        <Cell name="confirmed">{guest.companionsConfirmed ?? 'ยังไม่ถาม'}</Cell>
+        <Cell name="rsvp">
           <Badge status={rsvp.key}>{rsvp.label}</Badge>
-        </td>
-        <td>
+        </Cell>
+        <Cell name="invitation">
           <InvitationToggle
             id={guest.id}
             invitationGiven={guest.invitationGiven}
             name={guest.name}
           />
-        </td>
-        <td className="flex gap-2">
+        </Cell>
+        <Cell name="actions" className="flex gap-2">
           <Button
             variant="ghost"
             className="btn-icon"
@@ -43,7 +44,7 @@ export function GuestRow({ guest, columnCount }: { guest: Guest; columnCount: nu
             <PencilIcon />
           </Button>
           <DeleteGuestButton id={guest.id} name={guest.name} />
-        </td>
+        </Cell>
       </tr>
       {isEditing ? (
         <tr>
