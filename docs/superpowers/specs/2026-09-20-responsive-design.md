@@ -58,7 +58,9 @@ export type Column = {
 }
 ```
 
-`DataTable` รับ prop ใหม่ `mobile: 'cards' | 'scroll'` ค่าตั้งต้น `'cards'` และห่อตารางด้วย `<div>` เสมอ แบบ `'scroll'` ใส่ `overflow-x: auto` ที่ div นั้น
+`DataTable` รับ prop ใหม่ `mobile: 'cards' | 'scroll'` ค่าตั้งต้น `'cards'` และห่อตารางด้วย `<div>` เสมอ
+
+**แก้หลังตรวจจริง:** ของจริง `<div className="overflow-x-auto">` ใส่ไม่มีเงื่อนไข — ทั้งสองโหมดได้ `overflow-x: auto` เหมือนกัน ไม่ใช่เฉพาะ `'scroll'` ตามที่ร่างไว้ตอนแรก เหตุผล: โหมด `'cards'` ที่จอ ≥640px ก็ยังเป็นตารางเต็มคอลัมน์เหมือน `'scroll'` ทุกประการ (การแปลงเป็นการ์ดเกิดเฉพาะใต้ 640px) จึงต้องกันตารางล้นจอไว้เหมือนกันทั้งสองโหมดตอนที่มันยังเป็นตารางอยู่ ใส่แบบมีเงื่อนไขไว้จะพลาดเคสนี้
 
 ตัวช่วยสร้าง cell ผูกกับ `COLUMNS` ของตารางนั้น:
 
@@ -91,11 +93,11 @@ export type Column = {
 
 ```css
 @media (width < 40rem) {
-  .table-cards thead { display: none; }
-  .table-cards, .table-cards tbody,
-  .table-cards tr, .table-cards td { display: block; }
+  .data-table-cards thead { display: none; }
+  .data-table-cards, .data-table-cards tbody,
+  .data-table-cards tr, .data-table-cards td { display: block; }
 
-  .table-cards tr {
+  .data-table-cards tr {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
     background: var(--color-surface);
@@ -103,7 +105,7 @@ export type Column = {
     margin-bottom: 0.75rem;
   }
 
-  .table-cards td {
+  .data-table-cards td {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
@@ -111,25 +113,31 @@ export type Column = {
     border-bottom: none;
   }
 
-  .table-cards td[data-label]:not([data-label=""])::before {
+  .data-table-cards td[data-label]:not([data-label=""])::before {
     content: attr(data-label);
     color: var(--color-muted);
     flex: none;
   }
 
-  .table-cards td.hide-sm { display: none; }
+  .data-table-cards td.hide-sm { display: none; }
 }
 ```
+
+**แก้หลังตรวจจริง:** คลาสตัวปรับคือ `.data-table-cards` ไม่ใช่ `.table-cards` — คลาสฐานเปลี่ยนเป็น `data-table` ไปก่อนแล้ว (commit db0c198) แล้วเพิ่งพบว่าตัวปรับไม่ได้เปลี่ยนตาม จึงไม่มีรากร่วมกันและหลุดไปอยู่ใน namespace `table-*` ของ Tailwind (`table-auto`, `table-fixed`) โดยบังเอิญไม่ชน แก้โดยเปลี่ยนชื่อให้เข้าชุดเดียวกัน
+
+**แก้หลังตรวจจริงอีกจุด:** ทั้งก้อน `@media` นี้ย้ายออกมาอยู่ "นอก" `@layer components` แล้ว (ต่อท้ายไฟล์) ไม่ได้อยู่ในนั้นตามร่างเดิมด้านบน เหตุผล: Tailwind ประกาศ `@layer theme, base, components, utilities;` ดังนั้น utility class ใดๆ ที่หลุดเข้ามาทาง `className` ของ `<Cell>` (เช่น `<Cell name="actions" className="flex gap-2">`) จะชนะกฎใน `@layer components` เสมอไม่ว่า source order จะเป็นอย่างไร — นี่คือกลไกเดียวกับที่ `.table-cards { display: block }` เคยแพ้ `.table` utility ของ Tailwind แบบเงียบๆ มาก่อนแล้วรอบหนึ่งในงานนี้ (เปลี่ยนชื่อคลาสแก้ได้แค่ instance นั้น ไม่ได้แก้ที่ช่องโหว่) กฎที่ไม่อยู่ใน layer ใดเลยชนะทุก `@layer` เสมอ รวม `utilities` ด้วย จึงย้ายทั้งก้อนออกมาแทนที่จะพึ่ง source order
 
 จุดที่ต้องจัดการเป็นพิเศษ:
 
 1. **ช่องปุ่มแก้-ลบ** ป้ายว่าง (`label: ''`) ถ้าปล่อยไว้ `space-between` จะดันปุ่มแก้กับปุ่มลบไปคนละมุมการ์ด → ช่องที่ป้ายว่างให้ `justify-content: flex-end`
-2. **แถวฟอร์ม inline edit** `<tr><td colSpan={n}>` กลายเป็นการ์ดของตัวเองต่อท้ายการ์ดแถวนั้น ใช้ได้เลยไม่ต้องรื้อ เพราะ `<td>` นั้นไม่มี `data-label` จึงไม่ขึ้นป้าย
-3. **`caption`** ยังแสดงเหมือนเดิม ไม่ต้องแก้
+2. **แถวฟอร์ม inline edit** `<tr><td colSpan={n}>` กลายเป็นการ์ดของตัวเองต่อท้ายการ์ดแถวนั้น ที่คิดไว้แรกคือใช้ได้เลยไม่ต้องรื้อ เพราะ `<td>` นั้นไม่มี `data-label` จึงไม่ขึ้นป้าย — **แก้หลังตรวจจริง:** เหตุผลนั้นไม่ครบ ตรวจในเบราว์เซอร์จริงที่ 390px บน `/expenses` พบว่า `<tr>` นี้ยังโดนกฎ `.data-table-cards tr` จับอยู่ดี (ไม่เกี่ยวกับ `data-label`) เลยได้ขอบ/พื้นหลัง/padding ของการ์ด ซ้อนกับขอบของ `<Card className="mb-6">` ที่ฟอร์มห่อตัวเองไว้อีกชั้น และ `.data-table-cards td { display: flex; justify-content: space-between }` ทำให้ `<Card>` ลูกเดียวในนั้นหดเหลือ shrink-to-fit แทนที่จะเต็มแถว (วัดได้ฟอร์มกว้าง 283px ในการ์ดกว้าง 358px) แก้โดยให้ `<tr>` นี้มีคลาสของตัวเอง (`row-form`) แล้วเขียนกฎแยกให้ไม่รับสไตล์การ์ดและให้ `td` เป็น `display: block` เต็มความกว้างแทน
+3. **`caption`** ยังแสดงเหมือนเดิม ไม่ต้องแก้ — **ตรวจแล้ว:** `<caption>` มี `display: table-caption` เป็นค่าเริ่มต้นของ UA ซึ่งยังทำงานได้แม้ `<table>` แม่ถูกบังคับเป็น `display: block` (สเปก CSS ให้ `table-caption` สร้าง anonymous table box ของตัวเองเมื่อพ่อไม่ได้เป็น table แล้ว) เปิดดูจริงที่ 390px แล้วขึ้นตำแหน่งเดิมถูกต้อง ไม่ต้องมี fallback เพิ่ม
 
 ### ข้อแลกเปลี่ยนที่รับทราบแล้ว
 
 `display: block` บน `<table>` ทำให้ screen reader ไม่เห็นความเป็นตารางบนจอเล็ก แลกมากับการที่ทุกค่ามีป้ายกำกับติดตัว (`ยอด 12,000`) ซึ่งอ่านรู้เรื่องกว่าตารางล้นจอ เจ้าของงานรับทราบและเลือกแบบนี้
+
+**แก้หลังตรวจจริง — ตัวเลือกที่ไม่เลือก:** พิจารณา re-declare ARIA `role="table"` / `role="row"` / `role="cell"` ให้ `<table>`/`<tr>`/`<td>` เพื่อคืนความเป็นตารางให้ accessibility tree แม้ CSS จะเป็น `display: block` (วิธีนี้ทำได้จริงโดยไม่ต้องใช้ JS) แต่ไม่เลือกเพราะแก้ได้แค่ครึ่งเดียว: `.data-table-cards thead { display: none }` เอา `<th>` ออกจาก accessibility tree ไปแล้วไม่ว่าจะประกาศ role อะไรก็ตาม (element ที่ `display: none` ไม่มี accessible node) ความสัมพันธ์ header-to-cell จึงหายไปอยู่ดี และถ้าเพิ่ม role ทั้งชุดโดยไม่มี header กำกับ ป้าย `::before` (`ยอด 12,000`) กับ role="cell" จะอ่านซ้ำกันสองรอบ (ตัวป้ายในเนื้อหา + ตัว cell ที่ไม่มี header ประกาศ) ข้อสรุปเดิม (ยอมรับ trade-off เพราะป้ายในเนื้อหาอ่านรู้เรื่องกว่า) จึงยังยืนตามเดิม แค่บันทึกว่าพิจารณาทางนี้แล้วและทำไมไม่เลือก เหมือนที่หัวข้อ 3 ทำกับ hook
 
 ## 6. คอลัมน์รายหน้า
 
@@ -155,7 +163,11 @@ export type Column = {
 
 **การ์ดซ้อนการ์ด** — ตารางทุกตัวอยู่ใน `<Card>` ที่มีขอบ+พื้นหลัง+padding ของตัวเอง เพิ่มคลาส `card-flush` ที่หน้าซึ่งห่อตาราง cards ส่งเข้าไป (`Card` รับ `className` อยู่แล้ว) ต่ำกว่า 640px คลาสนี้ถอดขอบ/พื้นหลัง/padding ออก บนจอใหญ่ไม่มีผล
 
-**ขนาดปุ่ม** — `.btn-icon` ขยายเป็น 44px **เฉพาะใน media query มือถือ** ไม่แตะค่าบนจอใหญ่ เพราะ commit `d9f94fe` ตั้งใจย่อไว้ ("ปุ่ม icon ล้วนย่อให้พอดีตัว icon ไม่กินที่เท่าปุ่มมีข้อความ") เจตนานั้นยังอยู่ครบบน desktop
+**แก้หลังตรวจจริง:** ที่หน้าแขก `<Card className="card-flush">` ห่อ `<GuestTable>` ทั้งก้อน ไม่ได้ห่อเฉพาะ `<DataTable>` ข้างใน ดังนั้นแถวตัวกรองกับบรรทัดนับจำนวน ("แสดง N จาก M ราย ...") ก็ถอดขอบ/พื้นหลัง/padding ไปด้วยตอนต่ำกว่า 640px ไม่ใช่แค่ตัวตาราง ตรวจแล้วที่ 390px หน้าตาลื่นดี ไม่มีขอบเกินหรือขาด — เป็นภาพที่ต้องการจริง (ตัวกรองกับตารางเป็นบล็อกเดียวกันบนมือถือ) ไม่ใช่ผลข้างเคียงที่พลาด
+
+**ขนาดปุ่ม** — `.btn-icon` (ปุ่มแก้/ลบ) ขยายเป็น 44px **เฉพาะใน media query มือถือ** ไม่แตะค่าบนจอใหญ่ เพราะ commit `d9f94fe` ตั้งใจย่อไว้ ("ปุ่ม icon ล้วนย่อให้พอดีตัว icon ไม่กินที่เท่าปุ่มมีข้อความ") เจตนานั้นยังอยู่ครบบน desktop
+
+**แก้หลังตรวจจริง — checkbox จ่ายแล้ว/แจกซองแล้ว** ตอนแรกขยายเฉพาะ `.btn-icon` (ปุ่มแก้/ลบ) เป็น 44px แล้วปล่อย `<input type="checkbox">` ของ `PaidToggle`/`InvitationToggle` ไว้ที่ขนาด UA เดิม (~13-16px) ทั้งที่หัวข้อ 2 บอกเองว่าสถานการณ์หลักบนมือถือคือ "เช็คว่าจ่ายอะไรไปแล้ว" ไม่ใช่การแก้หรือลบ — กลายเป็นขยายตัวที่ใช้น้อยกว่าแทนตัวที่ใช้บ่อยกว่า แก้โดยเพิ่มกฎในมือถือ ขยาย checkbox ในการ์ดเป็น `1.5rem` (24px) ไม่ถึง 44px เต็มเพราะเป็น checkbox เดี่ยวไม่ใช่ปุ่มแยกที่มีระยะห่างจากตัวอื่นเท่าปุ่ม icon แต่กดง่ายขึ้นชัดเจนจาก UA เดิม
 
 **`layout.tsx`** — `px-4` (16px) พอดีอยู่แล้วไม่แตะ ปรับ `py-6` เป็น `py-4 sm:py-6`
 
