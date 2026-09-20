@@ -6,6 +6,7 @@ import { PencilIcon } from '@/components/ui/icons'
 import { Money } from '@/components/ui/money'
 import type { Vendor } from '@/db/schema'
 import type { VendorSummary } from '@/lib/totals'
+import { Cell } from './columns'
 import { DeleteVendorButton } from './delete-vendor-button'
 import { toVendorFormValues, VendorForm } from './vendor-form'
 
@@ -23,21 +24,23 @@ export function VendorRow({
   return (
     <>
       <tr>
-        <td>{vendor.name}</td>
-        <td>{vendor.role ?? '—'}</td>
-        <td>{vendor.phone ? <a href={`tel:${vendor.phone}`}>{vendor.phone}</a> : '—'}</td>
-        <td>{vendor.line ?? '—'}</td>
-        <td className="num">
+        <Cell name="name">{vendor.name}</Cell>
+        <Cell name="role">{vendor.role ?? '—'}</Cell>
+        <Cell name="phone">
+          {vendor.phone ? <a href={`tel:${vendor.phone}`}>{vendor.phone}</a> : '—'}
+        </Cell>
+        <Cell name="line">{vendor.line ?? '—'}</Cell>
+        <Cell name="agreed">
           <Money value={vendor.totalPrice} />
-        </td>
-        <td className="num">
+        </Cell>
+        <Cell name="paid">
           <Money value={summary?.paid ?? 0} />
-        </td>
-        <td className="num">
+        </Cell>
+        <Cell name="unpaid">
           <Money value={summary?.unpaid ?? 0} />
-        </td>
-        <td className="num">{summary?.unknownCount ?? 0}</td>
-        <td className="flex gap-2">
+        </Cell>
+        <Cell name="unknown">{summary?.unknownCount ?? 0}</Cell>
+        <Cell name="actions" className="flex gap-2">
           <Button
             variant="ghost"
             className="btn-icon"
@@ -49,7 +52,7 @@ export function VendorRow({
             <PencilIcon />
           </Button>
           <DeleteVendorButton id={vendor.id} name={vendor.name} />
-        </td>
+        </Cell>
       </tr>
       {isEditing ? (
         <tr>
