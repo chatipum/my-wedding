@@ -38,6 +38,11 @@ export async function createGuest(values: GuestValues): Promise<void> {
   await db.insert(guests).values(values)
 }
 
+/** นำเข้าหลายคนพร้อมกัน — insert ครั้งเดียวเพื่อให้ไฟล์ทั้งไฟล์ลงหรือไม่ลงพร้อมกัน */
+export async function createGuests(values: GuestValues[]): Promise<void> {
+  await db.insert(guests).values(values)
+}
+
 export async function updateGuest(id: number, values: GuestValues): Promise<void> {
   await db.update(guests).set(values).where(eq(guests.id, id))
 }
