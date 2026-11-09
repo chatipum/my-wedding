@@ -139,8 +139,22 @@ describe('countGuests', () => {
     expect(counts.confirmed).toBe(5)
   })
 
-  it('ไม่มียอดประมาณการหลงเหลืออยู่ในผลนับ', () => {
-    expect(countGuests([])).not.toHaveProperty('estimated')
+  it('คาดว่ามานับคนยังไม่ตอบรายละ 1 คน ไม่ใช้ค่าผู้ติดตามที่กรอกไว้ล่วงหน้า', () => {
+    const counts = countGuests([
+      { rsvp: 'yes', companionsConfirmed: 2, invitationGiven: false },
+      { rsvp: 'pending', companionsConfirmed: 5, invitationGiven: false },
+      { rsvp: 'no', companionsConfirmed: null, invitationGiven: false },
+    ])
+    expect(counts.expectedMin).toBe(4)
+  })
+
+  it('แขกทั้งหมดนับคนที่ตอบว่าไม่มาด้วย', () => {
+    const counts = countGuests([
+      { rsvp: 'yes', companionsConfirmed: 2, invitationGiven: false },
+      { rsvp: 'pending', companionsConfirmed: null, invitationGiven: false },
+      { rsvp: 'no', companionsConfirmed: null, invitationGiven: false },
+    ])
+    expect(counts.invitedPeople).toBe(5)
   })
 
   it('นับจำนวนคนที่ปฏิเสธและที่ยังไม่ตอบ', () => {
