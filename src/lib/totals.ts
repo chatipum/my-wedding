@@ -75,10 +75,14 @@ export type GuestCounts = {
   invitationsGiven: number
   /** จำนวนแถวแขก ไม่ใช่จำนวนคน — เป็นตัวหารของยอดแจกซอง เพราะซองแจกต่อแถว ไม่ได้แจกรายผู้ติดตาม */
   total: number
+  /** คน ขั้นต่ำ — ยืนยันแล้ว + ยังไม่ตอบรายละ 1 คน คิดจากสถานะตอบรับล้วน ไม่มีค่าที่กรอกคาดเอง */
+  expectedMin: number
+  /** คน — ทุกรายชื่อรวมคนที่ตอบว่าไม่มา + ผู้ติดตามที่ยืนยันแล้ว */
+  invitedPeople: number
 }
 
 export function countGuests(rows: GuestRow[]): GuestCounts {
-  return rows.reduce<GuestCounts>(
+  const counts = rows.reduce<Omit<GuestCounts, 'expectedMin' | 'invitedPeople'>>(
     (acc, row) => {
       // นับก่อนแยกทาง rsvp — คนที่ตอบว่าไม่มาก็ได้รับการ์ดไปแล้วจริง ต่างจากยอดประมาณการที่ตัดเขาออก
       const invitationsGiven = row.invitationGiven ? acc.invitationsGiven + 1 : acc.invitationsGiven
@@ -105,6 +109,8 @@ export function countGuests(rows: GuestRow[]): GuestCounts {
     },
     { confirmed: 0, confirmedRows: 0, declined: 0, pending: 0, invitationsGiven: 0, total: 0 },
   )
+  const expectedMin = counts.confirmed + counts.pending
+  return { ...counts, expectedMin, invitedPeople: expectedMin + counts.declined }
 }
 
 export type SidedGuestRow = GuestRow & { side: Side }
