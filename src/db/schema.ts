@@ -46,6 +46,8 @@ export const guests = pgTable('guests', {
   rsvp: text('rsvp').$type<Rsvp>().notNull().default('pending'),
   /** แจกการ์ด/ซองเชิญให้แขกรายนี้แล้วหรือยัง — คนละเรื่องกับตาราง envelopes ที่เก็บซองเงินที่ได้รับ */
   invitationGiven: boolean('invitation_given').notNull().default(false),
+  /** ตำแหน่งโต๊ะบนผัง 0–47 (ดู src/lib/seating.ts) · null = ยังไม่จัดโต๊ะ */
+  tableIndex: integer('table_index'),
   note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })

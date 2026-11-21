@@ -51,6 +51,10 @@ export async function setGuestInvitationGiven(id: number, invitationGiven: boole
   await db.update(guests).set({ invitationGiven }).where(eq(guests.id, id))
 }
 
+export async function setGuestTable(id: number, tableIndex: number | null): Promise<void> {
+  await db.update(guests).set({ tableIndex }).where(eq(guests.id, id))
+}
+
 export async function deleteGuest(id: number): Promise<void> {
   await db.delete(guests).where(eq(guests.id, id))
 }

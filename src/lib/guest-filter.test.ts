@@ -19,6 +19,7 @@ function guest(overrides: Partial<Guest> = {}): Guest {
     companionsConfirmed: null,
     rsvp: 'pending',
     invitationGiven: false,
+    tableIndex: null,
     note: null,
     createdAt: new Date('2026-01-01'),
     ...overrides,

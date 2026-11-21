@@ -81,6 +81,14 @@ export type GuestCounts = {
   invitedPeople: number
 }
 
+/**
+ * คน — ตัวแขก + ผู้ติดตามที่ยืนยันแล้ว เฉพาะแถวที่ตอบว่ามา ที่เหลือนับแค่ตัวแขก
+ * null = ยังไม่ได้ถามผู้ติดตาม ไม่เดาจำนวนให้ — ตัวเลขต่ำไว้ดีกว่าสูงเกินจริง
+ */
+export function headcount(row: Pick<GuestRow, 'rsvp' | 'companionsConfirmed'>): number {
+  return row.rsvp === 'yes' ? 1 + (row.companionsConfirmed ?? 0) : 1
+}
+
 export function countGuests(rows: GuestRow[]): GuestCounts {
   const counts = rows.reduce<Omit<GuestCounts, 'expectedMin' | 'invitedPeople'>>(
     (acc, row) => {
@@ -100,9 +108,7 @@ export function countGuests(rows: GuestRow[]): GuestCounts {
       }
 
       const pending = row.rsvp === 'pending' ? acc.pending + 1 : acc.pending
-      // null = ยังไม่ได้ถามผู้ติดตาม นับแค่ตัวแขกเอง ไม่เดาจำนวนให้ — ตัวเลขต่ำไว้ดีกว่าสูงเกินจริง
-      const confirmed =
-        row.rsvp === 'yes' ? acc.confirmed + 1 + (row.companionsConfirmed ?? 0) : acc.confirmed
+      const confirmed = row.rsvp === 'yes' ? acc.confirmed + headcount(row) : acc.confirmed
       const confirmedRows = row.rsvp === 'yes' ? acc.confirmedRows + 1 : acc.confirmedRows
 
       return { confirmed, confirmedRows, declined: acc.declined, pending, invitationsGiven, total }
