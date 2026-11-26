@@ -22,7 +22,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="th" className={sansThai.variable}>
       <body>
         <Nav />
-        <main className="mx-auto max-w-5xl px-4 py-4 sm:py-6">{children}</main>
+        {/* ที่ว่างข้างละครึ่งของที่เหลือจากกว้าง 64rem (max-w-5xl เดิม) */}
+        <main className="mx-auto max-w-[calc(32rem+50vw)] px-4 py-4 sm:py-6">{children}</main>
       </body>
     </html>
   )

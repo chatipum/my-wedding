@@ -13,7 +13,7 @@ export function Nav() {
   return (
     <nav className="border-b border-border bg-surface">
       {/* เมนู 6 อันไม่ล้นบนจอ ≥640px — flex-nowrap จึงมีผลแค่ตอนจอแคบ */}
-      <ul className="mx-auto flex max-w-5xl flex-nowrap gap-4 overflow-x-auto px-4 py-3">
+      <ul className="mx-auto flex max-w-[calc(32rem+50vw)] flex-nowrap gap-4 overflow-x-auto px-4 py-3">
         {LINKS.map((link) => (
           <li key={link.href}>
             <Link href={link.href} className="whitespace-nowrap">

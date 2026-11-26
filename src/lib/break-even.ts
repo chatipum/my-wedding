@@ -1,7 +1,8 @@
+import { TOTAL_SEATS } from '@/lib/seating'
 import type { GuestCounts } from '@/lib/totals'
 
-/** ที่นั่งสูงสุดของงาน นับเป็น "คน" รวมผู้ติดตามแล้ว */
-export const GUEST_CAPACITY = 400
+/** ที่นั่งสูงสุดของงาน นับเป็น "คน" รวมผู้ติดตามแล้ว = ที่นั่งทั้งผังโต๊ะ */
+export const GUEST_CAPACITY = TOTAL_SEATS
 export const DEFAULT_ENVELOPE_AMOUNT = 500
 
 export type BreakEvenInput = {

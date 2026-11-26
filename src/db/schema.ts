@@ -37,6 +37,8 @@ export const envelopes = pgTable('envelopes', {
 export const guests = pgTable('guests', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
+  /** ชื่อย่อบนเก้าอี้ในผังโต๊ะ · null = ใช้ 2 ตัวอักษรแรกของชื่อ */
+  nickname: text('nickname'),
   side: text('side').$type<Side>().notNull(),
   /** คอลัมน์ชื่อ guest_group เพราะ group เป็นคำสงวนของ SQL */
   group: text('guest_group'),
@@ -46,7 +48,7 @@ export const guests = pgTable('guests', {
   rsvp: text('rsvp').$type<Rsvp>().notNull().default('pending'),
   /** แจกการ์ด/ซองเชิญให้แขกรายนี้แล้วหรือยัง — คนละเรื่องกับตาราง envelopes ที่เก็บซองเงินที่ได้รับ */
   invitationGiven: boolean('invitation_given').notNull().default(false),
-  /** ตำแหน่งโต๊ะบนผัง 0–47 (ดู src/lib/seating.ts) · null = ยังไม่จัดโต๊ะ */
+  /** เลขช่องบนผัง (ดู src/lib/seating.ts) · null = ยังไม่จัดโต๊ะ */
   tableIndex: integer('table_index'),
   note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
