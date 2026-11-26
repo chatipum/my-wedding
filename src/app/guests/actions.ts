@@ -42,6 +42,7 @@ export async function importGuestsAction(raw: unknown): Promise<ActionResult> {
     await createGuests(
       names.map((name) => ({
         name,
+        nickname: null,
         side,
         group,
         companionsConfirmed: 0,

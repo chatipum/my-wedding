@@ -7,14 +7,15 @@ import { PageHeader } from '@/components/ui/page-header'
 import type { Guest, Side } from '@/db/schema'
 import { cn } from '@/lib/cn'
 import {
-  SEATS_PER_TABLE,
-  seatsUsedByTable,
-  TABLE_COUNT,
+  chairLabels,
+  LONG_TABLE_INDEX,
   TABLE_INDEXES,
+  TOTAL_SEATS,
+  tableColumn,
   tableRow,
+  tableSeats,
   tableSide,
 } from '@/lib/seating'
-import { headcount } from '@/lib/totals'
 import { assignTableAction } from './actions'
 
 const SIDE_LABEL: Record<Side, string> = { bride: 'เจ้าสาว', groom: 'เจ้าบ่าว' }
@@ -25,11 +26,60 @@ function tableTitle(index: number): string {
   return `โต๊ะฝั่ง${SIDE_LABEL[tableSide(index)]} แถว ${tableRow(index)}`
 }
 
-function tableTone(used: number): string {
-  if (used > SEATS_PER_TABLE) return 'border-unpaid bg-unpaid/10 text-unpaid font-semibold'
-  if (used === SEATS_PER_TABLE) return 'border-paid bg-paid/10 text-paid'
+function tableTone(used: number, seats: number): string {
+  if (used > seats) return 'border-unpaid bg-unpaid/10 text-unpaid font-semibold'
+  if (used === seats) return 'border-paid bg-paid/10 text-paid'
   if (used > 0) return 'border-accent bg-accent/10'
   return 'border-border bg-surface text-muted'
+}
+
+/** ช่องตาราง: คอลัมน์ 4 ของ grid เป็นทางเดิน แถว 1 เป็นหัวฝั่ง */
+function gridPlacement(index: number): React.CSSProperties {
+  const column = tableColumn(index)
+  const row = tableRow(index) + 1
+  return {
+    gridColumn: column > 3 ? column + 1 : column,
+    gridRow: index === LONG_TABLE_INDEX ? `${row} / span 2` : row,
+  }
+}
+
+function Chair({ label, over }: { label: string | null; over: boolean }) {
+  return (
+    <span
+      className={cn(
+        'grid aspect-square w-[min(24cqw,2rem)] place-items-center rounded-full border text-[min(9cqw,11px)] leading-none',
+        label === null && 'border-dashed border-border bg-surface',
+        label !== null && !over && 'border-accent bg-surface',
+        over && 'border-unpaid bg-unpaid/10 text-unpaid',
+      )}
+    >
+      {label}
+    </span>
+  )
+}
+
+function chairsOf(labels: string[], seats: number) {
+  return Array.from({ length: Math.max(seats, labels.length) }, (_, order) => ({
+    key: order,
+    label: labels[order] ?? null,
+    over: order >= seats,
+  }))
+}
+
+function TableFace({ guests, used, seats }: { guests: Guest[]; used: number; seats: number }) {
+  const groups = [...new Set(guests.flatMap((guest) => (guest.group ? [guest.group] : [])))]
+  return (
+    <>
+      {groups.length > 0 ? (
+        <span className="line-clamp-3 text-[min(7cqw,10px)] leading-tight">
+          {groups.join(' · ')}
+        </span>
+      ) : null}
+      <span className="text-[min(9cqw,12px)] tabular-nums">
+        {used}/{seats}
+      </span>
+    </>
+  )
 }
 
 function GuestLine({ guest, action }: { guest: Guest; action: React.ReactNode }) {
@@ -63,14 +113,15 @@ export function SeatingPlanner({ guests }: { guests: Guest[] }) {
       setError(result.ok ? null : result.message)
     })
 
-  const used = seatsUsedByTable(optimisticGuests)
-  const usedAt = (index: number) => used.get(index) ?? 0
+  const guestsAt = (index: number) => optimisticGuests.filter((guest) => guest.tableIndex === index)
+  const labelsAt = new Map(TABLE_INDEXES.map((index) => [index, chairLabels(guestsAt(index))]))
+  const usedAt = (index: number) => labelsAt.get(index)?.length ?? 0
   const seated = optimisticGuests.filter((guest) => guest.tableIndex !== null)
-  const seatedPeople = seated.reduce((sum, guest) => sum + headcount(guest), 0)
-  const overTables = TABLE_INDEXES.filter((index) => usedAt(index) > SEATS_PER_TABLE).length
+  const seatedPeople = chairLabels(seated).length
+  const overTables = TABLE_INDEXES.filter((index) => usedAt(index) > tableSeats(index)).length
 
   const selectedSide = tableSide(selected)
-  const atSelected = optimisticGuests.filter((guest) => guest.tableIndex === selected)
+  const atSelected = guestsAt(selected)
   const needle = keyword.trim().toLowerCase()
   const waiting = optimisticGuests.filter(
     (guest) =>
@@ -83,7 +134,7 @@ export function SeatingPlanner({ guests }: { guests: Guest[] }) {
     <>
       <PageHeader title="จัดโต๊ะ">
         <span>
-          จัดแล้ว {seatedPeople} คน / {TABLE_COUNT * SEATS_PER_TABLE} ที่
+          จัดแล้ว {seatedPeople} คน / {TOTAL_SEATS} ที่
         </span>
         <span>ยังไม่มีโต๊ะ {optimisticGuests.length - seated.length} ราย</span>
         {overTables > 0 ? <span className="text-unpaid">เกิน {overTables} โต๊ะ</span> : null}
@@ -95,32 +146,91 @@ export function SeatingPlanner({ guests }: { guests: Guest[] }) {
             เวที
           </div>
           <div className="grid grid-cols-[repeat(3,minmax(0,1fr))_1.25rem_repeat(3,minmax(0,1fr))] gap-2">
-            <div className="col-span-3 text-center text-sm text-muted">ญาติเจ้าสาว</div>
-            <div className="col-span-3 col-start-5 text-center text-sm text-muted">ญาติเจ้าบ่าว</div>
-            <div className="col-start-4 row-span-8 row-start-2 rounded bg-bg" />
-            {TABLE_INDEXES.map((index) => (
-              <button
-                key={index}
-                type="button"
-                aria-pressed={index === selected}
-                aria-label={`${tableTitle(index)} ใช้ ${usedAt(index)} จาก ${SEATS_PER_TABLE} ที่`}
-                onClick={() => setSelected(index)}
-                className={cn(
-                  'grid aspect-square cursor-pointer place-items-center rounded-full border-[1.5px] text-xs tabular-nums',
-                  tableTone(usedAt(index)),
-                  index === selected && 'outline-3 outline-offset-2 outline-accent',
-                )}
-              >
-                {usedAt(index)}/{SEATS_PER_TABLE}
-              </button>
-            ))}
+            <div className="col-span-3 text-center text-sm text-muted">แขกเจ้าสาว</div>
+            <div className="col-span-3 col-start-5 text-center text-sm text-muted">แขกเจ้าบ่าว</div>
+            <div className="col-start-4 row-span-9 row-start-2 rounded bg-bg" />
+            {TABLE_INDEXES.map((index) => {
+              const seats = tableSeats(index)
+              const chairs = chairsOf(labelsAt.get(index) ?? [], seats)
+              const half = Math.ceil(chairs.length / 2)
+              const face = <TableFace guests={guestsAt(index)} used={usedAt(index)} seats={seats} />
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  style={gridPlacement(index)}
+                  aria-pressed={index === selected}
+                  aria-label={`${tableTitle(index)} ใช้ ${usedAt(index)} จาก ${seats} ที่`}
+                  onClick={() => setSelected(index)}
+                  className={cn(
+                    'cursor-pointer rounded-lg text-xs',
+                    index === selected && 'outline-3 outline-offset-2 outline-accent',
+                  )}
+                >
+                  {index === LONG_TABLE_INDEX ? (
+                    <span className="@container grid h-full grid-cols-[auto_1fr_auto] gap-1 p-1">
+                      {[
+                        { side: 'left', column: chairs.slice(0, half) },
+                        { side: 'right', column: chairs.slice(half) },
+                      ].map(({ side, column }) => (
+                        <span
+                          key={side}
+                          className={cn(
+                            'flex flex-col justify-around',
+                            side === 'right' && 'col-start-3',
+                          )}
+                        >
+                          {column.map((chair) => (
+                            <Chair key={chair.key} label={chair.label} over={chair.over} />
+                          ))}
+                        </span>
+                      ))}
+                      <span
+                        className={cn(
+                          'col-start-2 row-start-1 flex flex-col items-center justify-center gap-1 rounded border-[1.5px] p-1',
+                          tableTone(usedAt(index), seats),
+                        )}
+                      >
+                        {face}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="@container relative block aspect-square">
+                      <span
+                        className={cn(
+                          'absolute inset-[25%] flex flex-col items-center justify-center gap-0.5 rounded-full border-[1.5px] p-1',
+                          tableTone(usedAt(index), seats),
+                        )}
+                      >
+                        {face}
+                      </span>
+                      {chairs.map((chair, order) => {
+                        const angle = (2 * Math.PI * order) / chairs.length
+                        return (
+                          <span
+                            key={chair.key}
+                            className="absolute -translate-x-1/2 -translate-y-1/2"
+                            style={{
+                              left: `${50 + 40 * Math.sin(angle)}%`,
+                              top: `${50 - 40 * Math.cos(angle)}%`,
+                            }}
+                          >
+                            <Chair label={chair.label} over={chair.over} />
+                          </span>
+                        )
+                      })}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </Card>
 
         <Card>
           <h2 className="font-semibold">{tableTitle(selected)}</h2>
-          <p className={usedAt(selected) > SEATS_PER_TABLE ? 'text-unpaid' : 'text-muted'}>
-            {usedAt(selected)}/{SEATS_PER_TABLE} ที่
+          <p className={usedAt(selected) > tableSeats(selected) ? 'text-unpaid' : 'text-muted'}>
+            {usedAt(selected)}/{tableSeats(selected)} ที่
           </p>
           {error ? (
             <p className="field-error" role="alert">

@@ -39,8 +39,8 @@ describe('calculateBreakEven', () => {
       guestCounts: { confirmed: 300, confirmedRows: 200 },
     })
     expect(result?.peoplePerEnvelope).toBe(1.5)
-    // 400 ÷ 1.5 = 266.67 — ปัดขึ้นแปลว่าเชิญเกินที่นั่ง
-    expect(result?.envelopeCapacity).toBe(266)
+    // 416 ÷ 1.5 = 277.33 — ปัดขึ้นแปลว่าเชิญเกินที่นั่ง
+    expect(result?.envelopeCapacity).toBe(277)
   })
 
   it('ตัวหารคือแถวที่ตอบว่ามาแล้วเท่านั้น คนที่ยังไม่ตอบไม่ถ่วงค่าเฉลี่ย', () => {
@@ -79,12 +79,12 @@ describe('calculateBreakEven', () => {
     })
     expect(result?.envelopesNeeded).toBe(1000)
     expect(result?.isFeasible).toBe(false)
-    expect(result?.envelopesOverCapacity).toBe(600)
+    expect(result?.envelopesOverCapacity).toBe(584)
   })
 
   it('พอดีเพดานยังถือว่าคุ้มทุนได้', () => {
     const result = calculateBreakEven({
-      totalExpense: 200_000,
+      totalExpense: 208_000,
       perEnvelope: 500,
       guestCounts: NO_GUESTS,
     })

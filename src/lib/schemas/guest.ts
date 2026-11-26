@@ -1,5 +1,5 @@
 import * as v from 'valibot'
-import { TABLE_COUNT } from '@/lib/seating'
+import { TABLE_INDEXES } from '@/lib/seating'
 import { idNumber, optionalInteger, optionalText, requiredText } from './shared'
 
 export const sideSchema = v.picklist(['groom', 'bride'], 'เลือกฝ่ายเจ้าบ่าวหรือเจ้าสาว')
@@ -7,6 +7,7 @@ export const rsvpSchema = v.picklist(['pending', 'yes', 'no'], 'สถานะ�
 
 export const guestInputSchema = v.object({
   name: requiredText('ชื่อแขก'),
+  nickname: optionalText,
   side: sideSchema,
   group: optionalText,
   companionsConfirmed: optionalInteger,
@@ -25,9 +26,7 @@ export const toggleInvitationSchema = v.object({ id: idNumber, invitationGiven: 
 /** แยกจาก guestInputSchema ด้วยเหตุผลเดียวกับ toggleInvitationSchema — แก้แขกต้องไม่ล้างโต๊ะ */
 export const assignTableSchema = v.object({
   id: idNumber,
-  tableIndex: v.nullable(
-    v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(TABLE_COUNT - 1, 'ไม่มีโต๊ะนี้')),
-  ),
+  tableIndex: v.nullable(v.picklist(TABLE_INDEXES, 'ไม่มีโต๊ะนี้')),
 })
 
 /**

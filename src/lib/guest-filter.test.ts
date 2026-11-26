@@ -13,6 +13,7 @@ function guest(overrides: Partial<Guest> = {}): Guest {
   return {
     id: 1,
     name: 'สมชาย ใจดี',
+    nickname: null,
     side: 'groom',
     group: 'เพื่อนมหาลัย',
     companionsEstimated: 0,

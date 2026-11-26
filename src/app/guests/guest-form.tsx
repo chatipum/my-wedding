@@ -15,6 +15,7 @@ type FormInput = v.InferInput<typeof guestInputSchema>
 
 const BLANK: FormInput = {
   name: '',
+  nickname: '',
   side: 'groom',
   group: '',
   companionsConfirmed: '',
@@ -28,6 +29,7 @@ export function toGuestFormValues(guest: Guest): GuestFormInitial {
   return {
     id: guest.id,
     name: guest.name,
+    nickname: guest.nickname ?? '',
     side: guest.side,
     group: guest.group ?? '',
     // null = ยังไม่ได้ถาม จึงต้องกลับไปเป็นช่องว่าง ไม่ใช่ '0'
@@ -100,6 +102,14 @@ export function GuestForm({
               }}
             />
           )}
+        </Field>
+
+        <Field
+          label="ชื่อย่อ"
+          hint="โชว์บนเก้าอี้ในผังโต๊ะ · ว่าง = 2 ตัวแรกของชื่อ"
+          error={errors.nickname?.message}
+        >
+          {(props) => <input className="input" {...props} {...register('nickname')} />}
         </Field>
 
         <Field label="ฝ่าย" error={errors.side?.message}>
